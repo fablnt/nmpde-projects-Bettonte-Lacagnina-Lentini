@@ -1,3 +1,6 @@
+#ifndef FISCHER_KOLMOGOROV_HPP
+#define FISCHER_KOLMOGOROV_HPP
+
 #include <deal.II/distributed/fully_distributed_tria.h>
 
 #include <deal.II/dofs/dof_handler.h>
@@ -15,6 +18,11 @@
 // Two header taken by reading documentation in order to obatin finite element object
 #include <deal.II/lac/petsc_vector.h>
 #include <deal.II/lac/petsc_sparse_matrix.h>
+
+//to deal with linear systems
+#include <deal.II/lac/solver_cg.h>
+#include <deal.II/lac/trilinos_precondition.h>
+#include <deal.II/lac/trilinos_sparse_matrix.h>
 
 // Header taken in order to obatin ConditionalOStream type
 #include <deal.II/base/conditional_ostream.h>
@@ -70,9 +78,28 @@ public:
   {
   }
 
+  //setup the problem
   void setup();
 
+  // Solve the problem.
+  void
+  solve();
+
+
 protected:
+
+  // Assemble the tangent problem.
+  void
+  assemble_system();
+
+  // Solve the linear system associated to the tangent problem.
+  void
+  solve_linear_system();
+
+  // Solve the problem for one time step using Newton's method.
+  void
+  solve_newton();
+
   // Number of MPI processes.
   const unsigned int mpi_size;
 
@@ -119,4 +146,24 @@ protected:
 
   // DoFs owned by current process.
   IndexSet locally_owned_dofs;
+
+  // Jacobian matrix.
+  TrilinosWrappers::SparseMatrix jacobian_matrix;
+
+  // Residual vector.
+  TrilinosWrappers::MPI::Vector residual_vector;
+
+  // Increment of the solution between Newton iterations.
+  TrilinosWrappers::MPI::Vector delta_owned;
+
+  // System solution (without ghost elements).
+  TrilinosWrappers::MPI::Vector solution_owned;
+
+  // System solution (including ghost elements).
+  TrilinosWrappers::MPI::Vector solution;
+
+  // System solution at previous time step.
+  TrilinosWrappers::MPI::Vector solution_old;
 };
+
+#endif
