@@ -19,13 +19,16 @@
 #include <deal.II/lac/petsc_vector.h>
 #include <deal.II/lac/petsc_sparse_matrix.h>
 
-//to deal with linear systems
-#include <deal.II/lac/solver_cg.h>
+//to deal with linear systems (GMRES solver in combination with AMG preconditioner)
+#include <deal.II/lac/solver_gmres.h>
 #include <deal.II/lac/trilinos_precondition.h>
 #include <deal.II/lac/trilinos_sparse_matrix.h>
 
 // Header taken in order to obatin ConditionalOStream type
 #include <deal.II/base/conditional_ostream.h>
+
+#include <deal.II/numerics/data_out.h> //used in output method
+#include <deal.II/numerics/vector_tools.h> //used in solve method
 
 #include <fstream>
 #include <iostream>
@@ -99,6 +102,10 @@ protected:
   // Solve the problem for one time step using Newton's method.
   void
   solve_newton();
+
+  // Output
+  void
+  output(const unsigned int &time_step) const;
 
   // Number of MPI processes.
   const unsigned int mpi_size;
