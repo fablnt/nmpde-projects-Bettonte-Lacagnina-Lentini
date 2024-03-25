@@ -19,7 +19,7 @@ FisherKolmogorov::setup()
 }
 
 void
-HeatNonLinear::solve_linear_system()
+FisherKolmogorov::solve_linear_system()
 {
   SolverControl solver_control(1000, 1e-6 * residual_vector.l2_norm());
 
