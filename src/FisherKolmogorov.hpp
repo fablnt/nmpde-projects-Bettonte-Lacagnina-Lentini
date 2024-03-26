@@ -41,7 +41,7 @@ class FisherKolmogorov
 
 public:
   // Physical dimension (1D, 3D)
-  static constexpr unsigned int dim = 1;
+  static constexpr unsigned int dim = 3;
   class SpreadingCoefficient : public Function<dim>
   {
   public:
@@ -153,6 +153,9 @@ protected:
 
   // DoFs owned by current process.
   IndexSet locally_owned_dofs;
+
+  // DoFs relevant to the current process (including ghost DoFs).
+  IndexSet locally_relevant_dofs;
 
   // Jacobian matrix.
   TrilinosWrappers::SparseMatrix jacobian_matrix;

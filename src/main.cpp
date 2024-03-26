@@ -15,6 +15,7 @@ int main (int argc, char *argv[]) {
     const double       T             = 20;
 
     FisherKolmogorov problem(mesh_filename, degree, deltat, T);
+    problem.setup();
     
 }
 
