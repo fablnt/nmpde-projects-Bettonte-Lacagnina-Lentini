@@ -1,7 +1,7 @@
 #include "FisherKolmogorov.hpp"
 
-void 
-FisherKolmogorov::setup() 
+void
+FisherKolmogorov::setup()
 {
   Triangulation<dim> mesh_serial;
 
@@ -12,68 +12,73 @@ FisherKolmogorov::setup()
   grid_in.read_msh(grid_in_file);
 
   GridTools::partition_triangulation(mpi_size, mesh_serial);
-  const auto construction_data = TriangulationDescription::Utilities::
-  create_description_from_triangulation(mesh_serial, MPI_COMM_WORLD);
+  const auto construction_data =
+    TriangulationDescription::Utilities::create_description_from_triangulation(
+      mesh_serial, MPI_COMM_WORLD);
   mesh.create_triangulation(construction_data);
 
-  pcout << "  Number of elements = " << mesh.n_global_active_cells() << std::endl;
-   
+  pcout << "  Number of elements = " << mesh.n_global_active_cells()
+        << std::endl;
+
   // Initialize the finite element space.
-{
-  pcout << "Initializing the finite element space" << std::endl;
+  {
+    pcout << "Initializing the finite element space" << std::endl;
 
-  fe = std::make_unique<FE_SimplexP<dim>>(r);
+    if (dim == 1)
+      fe = std::make_unique<FE_Q<dim>>(r);
+    else
+      fe = std::make_unique<FE_SimplexP<dim>>(r);
 
-  pcout << "  Degree                     = " << fe->degree << std::endl;
-  pcout << "  DoFs per cell              = " << fe->dofs_per_cell
-        << std::endl;
+    pcout << "  Degree                     = " << fe->degree << std::endl;
+    pcout << "  DoFs per cell              = " << fe->dofs_per_cell
+          << std::endl;
 
-  quadrature = std::make_unique<QGaussSimplex<dim>>(r + 1);
+    quadrature = std::make_unique<QGauss<dim>>(r + 1);
 
-  pcout << "  Quadrature points per cell = " << quadrature->size()
-        << std::endl;
-}
+    pcout << "  Quadrature points per cell = " << quadrature->size()
+          << std::endl;
+  }
 
-// Initialize the DoF handler.
-{
-  pcout << "Initializing the DoF handler" << std::endl;
+  // Initialize the DoF handler.
+  {
+    pcout << "Initializing the DoF handler" << std::endl;
 
-  dof_handler.reinit(mesh);
-  dof_handler.distribute_dofs(*fe);
+    dof_handler.reinit(mesh);
+    dof_handler.distribute_dofs(*fe);
 
-  locally_owned_dofs = dof_handler.locally_owned_dofs();
-  DoFTools::extract_locally_relevant_dofs(dof_handler, locally_relevant_dofs);
+    locally_owned_dofs = dof_handler.locally_owned_dofs();
+    DoFTools::extract_locally_relevant_dofs(dof_handler, locally_relevant_dofs);
 
-  pcout << "  Number of DoFs = " << dof_handler.n_dofs() << std::endl;
-}
+    pcout << "  Number of DoFs = " << dof_handler.n_dofs() << std::endl;
+  }
 
-// Initialize the linear system.
-{
-  pcout << "Initializing the linear system" << std::endl;
+  // Initialize the linear system.
+  {
+    pcout << "Initializing the linear system" << std::endl;
 
-  pcout << "  Initializing the sparsity pattern" << std::endl;
+    pcout << "  Initializing the sparsity pattern" << std::endl;
 
-  TrilinosWrappers::SparsityPattern sparsity(locally_owned_dofs,
+    TrilinosWrappers::SparsityPattern sparsity(locally_owned_dofs,
                                                MPI_COMM_WORLD);
-  DoFTools::make_sparsity_pattern(dof_handler, sparsity);
-  sparsity.compress();
+    DoFTools::make_sparsity_pattern(dof_handler, sparsity);
+    sparsity.compress();
 
-  pcout << "  Initializing the matrices" << std::endl;
-  jacobian_matrix.reinit(sparsity);
+    pcout << "  Initializing the matrices" << std::endl;
+    jacobian_matrix.reinit(sparsity);
 
-  pcout << "  Initializing the system right-hand side" << std::endl;
-  residual_vector.reinit(locally_owned_dofs, MPI_COMM_WORLD);
-  pcout << "  Initializing the solution vector" << std::endl;
-  solution_owned.reinit(locally_owned_dofs, MPI_COMM_WORLD);
-  delta_owned.reinit(locally_owned_dofs, MPI_COMM_WORLD);
+    pcout << "  Initializing the system right-hand side" << std::endl;
+    residual_vector.reinit(locally_owned_dofs, MPI_COMM_WORLD);
+    pcout << "  Initializing the solution vector" << std::endl;
+    solution_owned.reinit(locally_owned_dofs, MPI_COMM_WORLD);
+    delta_owned.reinit(locally_owned_dofs, MPI_COMM_WORLD);
 
-  solution.reinit(locally_owned_dofs, locally_relevant_dofs, MPI_COMM_WORLD);
-  solution_old = solution;
+    solution.reinit(locally_owned_dofs, locally_relevant_dofs, MPI_COMM_WORLD);
+    solution_old = solution;
   }
 }
 
 void
-FisherKolmogorov::assemble_system() 
+FisherKolmogorov::assemble_system()
 {
   const unsigned int dofs_per_cell = fe->dofs_per_cell;
   const unsigned int n_q           = quadrature->size();
@@ -92,11 +97,11 @@ FisherKolmogorov::assemble_system()
   residual_vector = 0.0;
 
   // Value and gradient of the solution on current cell.
-  std::vector<double>         solution_loc(n_q);   
+  std::vector<double>         solution_loc(n_q);
   std::vector<Tensor<1, dim>> solution_gradient_loc(n_q);
 
   // Value of the solution at previous timestep (un) on current cell.
-  std::vector<double> solution_old_loc(n_q);        //un+1
+  std::vector<double> solution_old_loc(n_q); // un+1
 
   for (const auto &cell : dof_handler.active_cell_iterators())
     {
@@ -114,29 +119,40 @@ FisherKolmogorov::assemble_system()
 
       for (unsigned int q = 0; q < n_q; ++q)
         {
-          // Evaluate coefficients on this quadrature node.   
-          const double spreading_coefficient_loc = spreading_coefficient.value(fe_values.quadrature_point(q));
+          // Evaluate coefficients on this quadrature node.
+          // const double
+          // spreading_coefficient.value(fe_values.quadrature_point(q));
 
           for (unsigned int i = 0; i < dofs_per_cell; ++i)
             {
               for (unsigned int j = 0; j < dofs_per_cell; ++j)
                 {
                   // Mass matrix.
-                  cell_matrix(i, j) += fe_values.shape_value(i, q) *      //time derivative term
-                                       fe_values.shape_value(j, q) / deltat *
-                                       fe_values.JxW(q);
-                                      
+                  cell_matrix(i, j) +=
+                    fe_values.shape_value(i, q) * // time derivative term
+                    fe_values.shape_value(j, q) / deltat * fe_values.JxW(q);
                   // Non-linear stiffness matrix, first term.
-                  cell_matrix(i, j) +=  
-                  spreading_coefficient_loc * scalar_product(fe_values.shape_grad(i,q), fe_values.shape_grad(j,q)) * fe_values.JxW(q);
-                  
+                  cell_matrix(i, j) +=
+
+                    scalar_product(spreading_coefficient *
+                                     fe_values.shape_grad(i, q),
+                                   fe_values.shape_grad(j, q)) *
+                    fe_values.JxW(q);
+
+
                   // Non-linear stiffness matrix, second term.
                   cell_matrix(i, j) -=
-                  growth_coefficient * fe_values.shape_value(i,q) * fe_values.shape_value(j,q) * fe_values.JxW(q);
+                    growth_coefficient.value(fe_values.quadrature_point(q)) *
+                    fe_values.shape_value(i, q) * fe_values.shape_value(j, q) *
+                    fe_values.JxW(q);
+
 
                   // Non-linear stiffness matrix, third term.
-                  cell_matrix(i, j) += 
-                  2 * growth_coefficient * solution_loc[q] * fe_values.shape_value(i,q) * fe_values.shape_value(j,q) * fe_values.JxW(q);
+                  cell_matrix(i, j) +=
+                    2 *
+                    growth_coefficient.value(fe_values.quadrature_point(q)) *
+                    solution_loc[q] * fe_values.shape_value(i, q) *
+                    fe_values.shape_value(j, q) * fe_values.JxW(q);
                 }
 
               // Assemble the residual vector (with changed sign).
@@ -147,42 +163,50 @@ FisherKolmogorov::assemble_system()
 
               // Diffusion term
               cell_residual(i) -=
-               spreading_coefficient_loc * scalar_product(solution_gradient_loc[q], fe_values.shape_grad(i, q)) * fe_values.JxW(q);
+                scalar_product(spreading_coefficient * solution_gradient_loc[q],
+                               fe_values.shape_grad(i, q)) *
+                fe_values.JxW(q);
 
-              //Growth term
-              cell_residual(i) += 
-              ((growth_coefficient * solution_loc[q]) * (1 - solution_loc[q])) * fe_values.shape_value(i, q) * fe_values.JxW(q);
-              
+              // Growth term
+              cell_residual(i) +=
+                ((growth_coefficient.value(fe_values.quadrature_point(q)) *
+                  solution_loc[q]) *
+                 (1 - solution_loc[q])) *
+                fe_values.shape_value(i, q) * fe_values.JxW(q);
+
+
               // Forcing term equals to 0, no contribution to cell_residual(i)
+            }
+
+          cell->get_dof_indices(dof_indices);
+
+          jacobian_matrix.add(dof_indices, cell_matrix);
+          residual_vector.add(dof_indices, cell_residual);
         }
 
-      cell->get_dof_indices(dof_indices);
-
-      jacobian_matrix.add(dof_indices, cell_matrix);
-      residual_vector.add(dof_indices, cell_residual);
+      // Parallel communication among processes
+      jacobian_matrix.compress(VectorOperation::add);
+      residual_vector.compress(VectorOperation::add);
     }
-
-  //Parallel communication among processes
-  jacobian_matrix.compress(VectorOperation::add);
-  residual_vector.compress(VectorOperation::add);
-
-}
 }
 
 void
 FisherKolmogorov::solve_linear_system()
 {
-  //setting for solver
-  SolverControl solver_control(1000, 1e-6 * residual_vector.l2_norm()); //residual norm taken into account for a more reliable tolerance
+  // setting for solver
+  SolverControl solver_control(
+    1000, 1e-6 * residual_vector.l2_norm()); // residual norm taken into account
+                                             // for a more reliable tolerance
 
-  //GMRES solver 
+  // GMRES solver
   SolverGMRES<TrilinosWrappers::MPI::Vector> solver(solver_control);
 
-  //AMG preconditioner declaration and initialization
+  // AMG preconditioner declaration and initialization
   TrilinosWrappers::PreconditionAMG preconditioner;
-  preconditioner.initialize(jacobian_matrix, TrilinosWrappers::PreconditionAMG::AdditionalData(1.0));
-  
-  //solve with GMRES solver
+  preconditioner.initialize(
+    jacobian_matrix, TrilinosWrappers::PreconditionAMG::AdditionalData(1.0));
+
+  // solve with GMRES solver
   solver.solve(jacobian_matrix, delta_owned, residual_vector, preconditioner);
   pcout << "  " << solver_control.last_step() << " CG iterations" << std::endl;
 }
@@ -190,19 +214,20 @@ FisherKolmogorov::solve_linear_system()
 void
 FisherKolmogorov::solve_newton()
 {
-  //parameters for the GMRES solver
+  // parameters for the GMRES solver
   const unsigned int n_max_iters        = 1000;
   const double       residual_tolerance = 1e-6;
-  unsigned int n_iter        = 0;
-  double       residual_norm = residual_tolerance + 1;
+  unsigned int       n_iter             = 0;
+  double             residual_norm      = residual_tolerance + 1;
 
-  //Apply the boundary conditions: in this case no need for dirichlet boundary conditions
+  // Apply the boundary conditions: in this case no need for dirichlet boundary
+  // conditions
 
 
-  //iterative cycle till convergence
+  // iterative cycle till convergence
   while (n_iter < n_max_iters && residual_norm > residual_tolerance)
     {
-      //assembly of the jacobian matrix and the residual vector
+      // assembly of the jacobian matrix and the residual vector
       assemble_system();
       residual_norm = residual_vector.l2_norm();
 
@@ -210,18 +235,19 @@ FisherKolmogorov::solve_newton()
             << " - ||r|| = " << std::scientific << std::setprecision(6)
             << residual_norm << std::flush;
 
-      // We actually solve the system only if the residual is larger than the tolerance.
+      // We actually solve the system only if the residual is larger than the
+      // tolerance.
       if (residual_norm > residual_tolerance)
-      {
-        solve_linear_system();
+        {
+          solve_linear_system();
 
-        solution_owned += delta_owned;
-        solution = solution_owned;
-      }
+          solution_owned += delta_owned;
+          solution = solution_owned;
+        }
       else
-      {
-        pcout << " < tolerance" << std::endl;
-      }
+        {
+          pcout << " < tolerance" << std::endl;
+        }
 
       ++n_iter;
     }
@@ -248,7 +274,11 @@ FisherKolmogorov::solve()
 
   unsigned int time_step = 0;
 
-  while (time < T - 0.5 * deltat) // - 0.5*deltat is a tolerance setted to avoid extra-iterations
+  while (
+    time <
+    T -
+      0.5 *
+        deltat) // - 0.5*deltat is a tolerance setted to avoid extra-iterations
     {
       time += deltat;
       ++time_step;
@@ -269,7 +299,7 @@ FisherKolmogorov::solve()
 }
 
 
-//output function
+// output function
 void
 FisherKolmogorov::output(const unsigned int &time_step) const
 {

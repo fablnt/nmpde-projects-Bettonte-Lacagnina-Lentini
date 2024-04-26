@@ -1,21 +1,22 @@
-#include "FisherKolmogorov.hpp"
-
 #include <fstream>
 #include <iostream>
-#include <vector>
 #include <string>
+#include <vector>
 
-int main (int argc, char *argv[]) {
-    
-    Utilities::MPI::MPI_InitFinalize mpi_init(argc, argv);
+#include "FisherKolmogorov.hpp"
 
-    const std::string  mesh_filename = "../mesh/brain-h3.0.msh";
-    const unsigned int degree        = 1;
-    const double       deltat        = 0.1;
-    const double       T             = 20;
+int
+main(int argc, char *argv[])
+{
+  Utilities::MPI::MPI_InitFinalize mpi_init(argc, argv);
 
-    FisherKolmogorov problem(mesh_filename, degree, deltat, T);
-    problem.setup();
-    
+  const std::string  mesh_filename = "../brain-h3.0.msh";
+  const unsigned int degree        = 1;
+  const double       deltat        = 0.1;
+  const double       T             = 1;
+  const double       dext          = 0.0001;
+
+  FisherKolmogorov problem(mesh_filename, degree, deltat, T, dext);
+  problem.setup();
+  problem.solve();
 }
-
