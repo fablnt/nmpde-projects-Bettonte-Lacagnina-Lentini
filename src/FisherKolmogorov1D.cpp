@@ -263,5 +263,28 @@ FisherKolmogorov1D::solve()
 void
 FisherKolmogorov1D::output(const unsigned int &time_step) const
 {
-  std::cout << "time_step = " << time_step << std::endl;
+  std::cout << "===============================================" << std::endl;
+  std::cout << "Time step:  " << time_step << std::endl;
+  
+  // The DataOut class manages writing the results to a file.
+  DataOut<dim> data_out;
+
+  // It can write multiple variables (defined on the same mesh) to a single
+  // file. Each of them can be added by calling add_data_vector, passing the
+  // associated DoFHandler and a name.
+  data_out.add_data_vector(dof_handler, solution, "solution");
+
+  // Once all vectors have been inserted, call build_patches to finalize the
+  // DataOut object, preparing it for writing to file.
+  data_out.build_patches();
+
+  // Then, use one of the many write_* methods to write the file in an
+  // appropriate format.
+  const std::string output_file_name = "output-" + std::to_string(time_step) + ".vtk";
+  std::ofstream output_file(output_file_name);
+  data_out.write_vtk(output_file);
+
+  std::cout << "Output written to " << output_file_name << std::endl;
+
+  std::cout << "===============================================" << std::endl;
 }
