@@ -39,13 +39,39 @@
 
 using namespace dealii;
 
+std::string
+getseddingRegion(std::string region)
+{
+  switch (region)
+  case:
+    ...
+}
+
+
+class SeedingRegion
+{
+public:
+  double x_min;
+  double x_max;
+
+  SeedingRegion(double min, double max)
+    : x_min(min)
+    , x_max(max)
+  {}
+};
+
+class Alpha_inclusion : public SeedingRegion
+{
+  Alpha_inclusion()
+    : SeedingRegion(30.0, 50.0)
+  {}
+};
 
 class FisherKolmogorov
 {
 public:
   // Physical dimension (1D, 3D)
   static constexpr unsigned int dim = 3;
-
   class GrowthCoefficient : public Function<dim>
   {
   public:
@@ -67,18 +93,23 @@ public:
     {}
 
     virtual double
-    value(const Point<dim> & /*p*/,
+    value(const Point<dim> &p,
           const unsigned int /*component*/ = 0) const override
     {
-      return 0.1;
+      // tau inclusions
+      if ((p[0] > region.x_min || p[0] < region.x_max) &&
+          (p[1] > 60 || p[1] < 90) && (p[2] > 50 || p[2] < 67))
+        return 0.1;
+      else
+        return 0.0;
     }
   };
 
-  FisherKolmogorov(const std::string  &mesh_file_name_,
-                   const unsigned int &r_,
-                   const double       &deltat_,
-                   const double       &T_,
-                   const double       &dext_)
+  FisherKolmogorov(const std::string        &mesh_file_name_,
+                   const unsigned int       &r_,
+                   const double             &deltat_,
+                   const double             &T_,
+                   const double &dext_ const std::string region_)
     : mpi_size(Utilities::MPI::n_mpi_processes(MPI_COMM_WORLD))
     , mpi_rank(Utilities::MPI::this_mpi_process(MPI_COMM_WORLD))
     , pcout(std::cout, mpi_rank == 0)
@@ -91,6 +122,10 @@ public:
     spreading_coefficient.clear();
     for (size_t i = 0; i < dim; i++)
       spreading_coefficient[i][i] = dext_;
+
+    region = getSeedingRegion(region_);
+
+    // method to choose the region at runtime based on the name passed.
   }
 
   // setup the problem
@@ -140,6 +175,9 @@ protected:
   double time;
 
   const double T;
+
+  SeedingRegion *region = nullptr;
+
 
   // Path to the mesh file.
   const std::string mesh_file_name;
