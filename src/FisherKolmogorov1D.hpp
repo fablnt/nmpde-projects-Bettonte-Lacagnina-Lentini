@@ -53,10 +53,11 @@ public:
     value(const Point<dim> &p,
           const unsigned int /*component*/ = 0) const override
     {
-      if (p[0] == 0)
+      double tol = 1.0e-5;
+      if (std::abs(p[0] - 0.00502513) < tol)
         return 0.1;
       else
-        return 0.1;
+        return 0.0;
     }
   };
 
