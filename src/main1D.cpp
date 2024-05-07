@@ -12,7 +12,7 @@ main()
   const unsigned int degree                = 1;
   const double       deltat                = 0.1;
   const double       T                     = 5;
-  const double       spreading_coefficient = 0.00001;
+  const double       spreading_coefficient = 0.0001;
   const double       growth_coefficient    = 1.0;
 
   FisherKolmogorov1D problem(mesh_filename,

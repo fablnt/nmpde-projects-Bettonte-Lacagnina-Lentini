@@ -37,35 +37,77 @@
 #include <fstream>
 #include <iostream>
 
+
 using namespace dealii;
 
-std::string
-getseddingRegion(std::string region)
-{
-  switch (region)
-  case:
-    ...
-}
+#include <string>
 
-
+/*
+// SeedingRegion is a base class for different seeding regions
 class SeedingRegion
 {
 public:
-  double x_min;
-  double x_max;
 
-  SeedingRegion(double min, double max)
-    : x_min(min)
-    , x_max(max)
+  SeedingRegion(double x_min_,
+                double x_max_,
+                double y_min_,
+                double y_max_,
+                double z_min_,
+                double z_max_)
+    : x_min(x_min_)
+    , x_max(x_max_)
+    , y_min(y_min_)
+    , y_max(y_max_)
+    , z_min(z_min_)
+    , z_max(z_max_)
   {}
+
+  protected:
+  double x_min, x_max;
+  double y_min, y_max;
+  double z_min, z_max;
 };
 
-class Alpha_inclusion : public SeedingRegion
+// todo
+class Tau_inclusions : public SeedingRegion
 {
-  Alpha_inclusion()
-    : SeedingRegion(30.0, 50.0)
+public:
+  Tau_inclusions()
+    : SeedingRegion(63.0, 80.0, 48.0, 60.0, 50.0, 67.0)
   {}
 };
+// todo
+class Amyloid_Beta_deposits : public SeedingRegion
+{
+public:
+  Amyloid_Beta_deposits()
+    : SeedingRegion(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+  {}
+};
+
+// todo
+class TPD43_inclusions : public SeedingRegion
+{
+public:
+  TPD43_inclusions()
+    : SeedingRegion(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+  {}
+};
+
+// Factory function to create seeding regions
+SeedingRegion *
+getseddingRegion(std::string region)
+{
+  if (region == "Tau inclusions")
+    return new Tau_inclusions();
+  else if (region == "Amyloid-Beta deposits")
+    return new Amyloid_Beta_deposits();
+  else if (region == "TPD-43 inclusions")
+    return new TPD43_inclusions();
+  else
+    throw std::invalid_argument("Invalid seeding region");
+}
+*/
 
 class FisherKolmogorov
 {
@@ -97,19 +139,19 @@ public:
           const unsigned int /*component*/ = 0) const override
     {
       // tau inclusions
-      if ((p[0] > region.x_min || p[0] < region.x_max) &&
-          (p[1] > 60 || p[1] < 90) && (p[2] > 50 || p[2] < 67))
+      if ((p[0] > 63 && p[0] < 80) && (p[1] > 62 && p[1] < 90) &&
+          (p[2] > 46 && p[2] < 67))
         return 0.1;
       else
         return 0.0;
     }
   };
 
-  FisherKolmogorov(const std::string        &mesh_file_name_,
-                   const unsigned int       &r_,
-                   const double             &deltat_,
-                   const double             &T_,
-                   const double &dext_ const std::string region_)
+  FisherKolmogorov(const std::string  &mesh_file_name_,
+                   const unsigned int &r_,
+                   const double       &deltat_,
+                   const double       &T_,
+                   const double       &dext_)
     : mpi_size(Utilities::MPI::n_mpi_processes(MPI_COMM_WORLD))
     , mpi_rank(Utilities::MPI::this_mpi_process(MPI_COMM_WORLD))
     , pcout(std::cout, mpi_rank == 0)
@@ -122,9 +164,6 @@ public:
     spreading_coefficient.clear();
     for (size_t i = 0; i < dim; i++)
       spreading_coefficient[i][i] = dext_;
-
-    region = getSeedingRegion(region_);
-
     // method to choose the region at runtime based on the name passed.
   }
 
@@ -176,8 +215,8 @@ protected:
 
   const double T;
 
-  SeedingRegion *region = nullptr;
 
+  // SeedingRegion *region = nullptr;
 
   // Path to the mesh file.
   const std::string mesh_file_name;
