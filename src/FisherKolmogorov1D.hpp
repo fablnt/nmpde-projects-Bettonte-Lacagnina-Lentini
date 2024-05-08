@@ -53,7 +53,6 @@ public:
     value(const Point<dim> &p,
           const unsigned int /*component*/ = 0) const override
     {
-      // double tol = 1.0e-5;
       if ((p[0] - 0) == 0)
         return 0.1;
       else
