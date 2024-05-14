@@ -1,6 +1,10 @@
 #ifndef FISCHER_KOLMOGOROV_HPP
 #define FISCHER_KOLMOGOROV_HPP
 
+#include <deal.II/base/function.h>
+#include <deal.II/base/tensor.h>
+#include <deal.II/base/tensor_function.h>
+
 #include <deal.II/distributed/fully_distributed_tria.h>
 
 #include <deal.II/dofs/dof_handler.h>
@@ -16,6 +20,7 @@
 #include <deal.II/grid/grid_out.h>
 #include <deal.II/grid/tria.h>
 
+
 // Two header taken by reading documentation in order to obatin finite element
 // object
 #include <deal.II/lac/petsc_sparse_matrix.h>
@@ -23,6 +28,8 @@
 
 // to deal with linear systems (GMRES solver in combination with AMG
 // preconditioner)
+#include <deal.II/base/tensor.h>
+
 #include <deal.II/lac/solver_gmres.h>
 #include <deal.II/lac/trilinos_precondition.h>
 #include <deal.II/lac/trilinos_sparse_matrix.h>
@@ -36,136 +43,120 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <memory>
+#include <string>
+
+#include "SeedingRegions.hpp"
 
 
 using namespace dealii;
 
-#include <string>
-
-/*
-// SeedingRegion is a base class for different seeding regions
-class SeedingRegion
-{
-public:
-
-  SeedingRegion(double x_min_,
-                double x_max_,
-                double y_min_,
-                double y_max_,
-                double z_min_,
-                double z_max_)
-    : x_min(x_min_)
-    , x_max(x_max_)
-    , y_min(y_min_)
-    , y_max(y_max_)
-    , z_min(z_min_)
-    , z_max(z_max_)
-  {}
-
-  protected:
-  double x_min, x_max;
-  double y_min, y_max;
-  double z_min, z_max;
-};
-
-// todo
-class Tau_inclusions : public SeedingRegion
-{
-public:
-  Tau_inclusions()
-    : SeedingRegion(63.0, 80.0, 48.0, 60.0, 50.0, 67.0)
-  {}
-};
-// todo
-class Amyloid_Beta_deposits : public SeedingRegion
-{
-public:
-  Amyloid_Beta_deposits()
-    : SeedingRegion(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-  {}
-};
-
-// todo
-class TPD43_inclusions : public SeedingRegion
-{
-public:
-  TPD43_inclusions()
-    : SeedingRegion(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-  {}
-};
-
-// Factory function to create seeding regions
-SeedingRegion *
-getseddingRegion(std::string region)
-{
-  if (region == "Tau inclusions")
-    return new Tau_inclusions();
-  else if (region == "Amyloid-Beta deposits")
-    return new Amyloid_Beta_deposits();
-  else if (region == "TPD-43 inclusions")
-    return new TPD43_inclusions();
-  else
-    throw std::invalid_argument("Invalid seeding region");
-}
-*/
 
 class FisherKolmogorov
 {
 public:
   // Physical dimension (1D, 3D)
   static constexpr unsigned int dim = 3;
-  class GrowthCoefficient : public Function<dim>
+
+  class SpreadingCoefficient
   {
   public:
-    GrowthCoefficient()
+    SpreadingCoefficient(const double &dext_, const double &daxn_)
+      : dext(dext_)
+      , daxn(daxn_)
+    {}
+
+    Tensor<2, dim>
+    value(const Point<dim> & /*p*/, const Tensor<1, dim> &direction) const
+    {
+      Tensor<2, dim> D;
+
+      for (unsigned int i = 0; i < dim; i++)
+        D[i][i] = dext;
+
+      Tensor<2, dim> S = outer_product(direction, direction) * daxn;
+
+      return D + S;
+    }
+
+  private:
+    const double dext, daxn;
+  };
+
+  class GrowthCoefficientWhite : public Function<dim>
+  {
+  public:
+    GrowthCoefficientWhite()
     {}
 
     virtual double
     value(const Point<dim> & /*p*/,
           const unsigned int /*component*/ = 0) const override
     {
-      return 1.0;
+      return 0.5;
+    }
+  };
+
+  class GrowthCoefficientGrey : public Function<dim>
+  {
+  public:
+    GrowthCoefficientGrey()
+    {}
+
+    virtual double
+    value(const Point<dim> & /*p*/,
+          const unsigned int /*component*/ = 0) const override
+    {
+      return 0.5;
     }
   };
 
   class FunctionC0 : public Function<dim>
   {
   public:
-    FunctionC0()
+    FunctionC0(const std::string &seeding_region_)
+      : seeding_region(std::move(getSeedingRegion(seeding_region_)))
     {}
 
     virtual double
     value(const Point<dim> &p,
           const unsigned int /*component*/ = 0) const override
     {
-      // tau inclusions
-      if ((p[0] > 63 && p[0] < 80) && (p[1] > 62 && p[1] < 90) &&
-          (p[2] > 46 && p[2] < 67))
+      if ((p[0] > 63 /*seeding_region->x_min*/ && p[0] < 81
+           /*seeding_region->x_max*/) &&
+          (p[1] > 60 /*seeding_region->y_min*/ && p[1] < 90
+           /*seeding_region->y_max*/) &&
+          (p[2] > 46 /*seeding_region->z_min*/ &&
+           p[2] < 67 /*seeding_region->z_max*/))
         return 0.1;
       else
         return 0.0;
     }
+
+  private:
+    const std::unique_ptr<SeedingRegion> seeding_region;
   };
 
   FisherKolmogorov(const std::string  &mesh_file_name_,
                    const unsigned int &r_,
                    const double       &deltat_,
                    const double       &T_,
-                   const double       &dext_)
+                   const double       &dext_,
+                   const double       &daxn_,
+                   const std::string  &seeding_region_,
+                   const std::string  &orientation_)
     : mpi_size(Utilities::MPI::n_mpi_processes(MPI_COMM_WORLD))
     , mpi_rank(Utilities::MPI::this_mpi_process(MPI_COMM_WORLD))
     , pcout(std::cout, mpi_rank == 0)
+    , spreading_coefficient(dext_, daxn_)
+    , c_0(seeding_region_)
+    , orientation(orientation_)
     , T(T_)
     , mesh_file_name(mesh_file_name_)
     , r(r_)
     , deltat(deltat_)
     , mesh(MPI_COMM_WORLD)
-  {
-    spreading_coefficient.clear();
-    for (size_t i = 0; i < dim; i++)
-      spreading_coefficient[i][i] = dext_;
-    // method to choose the region at runtime based on the name passed.
-  }
+  {}
 
   // setup the problem
   void
@@ -193,6 +184,13 @@ protected:
   void
   output(const unsigned int &time_step) const;
 
+  Tensor<1, dim>
+  compute_radial_direction(const auto &cell) const;
+  Tensor<1, dim>
+  compute_circumferential_direction(const auto &cell) const;
+  Tensor<1, dim>
+  compute_axon_based_direction(const auto &cell) const;
+
   // Number of MPI processes.
   const unsigned int mpi_size;
 
@@ -203,20 +201,21 @@ protected:
   ConditionalOStream pcout;
 
   // Coefficient alpha
-  GrowthCoefficient growth_coefficient;
+  double                 growth_coefficient;
+  GrowthCoefficientWhite growth_coefficient_white;
+  GrowthCoefficientGrey  growth_coefficient_grey;
 
   // spreading coefficient D
-  Tensor<2, dim> spreading_coefficient;
+  SpreadingCoefficient spreading_coefficient;
 
   // Initial concentration c(t = 0)
   FunctionC0 c_0;
 
+  std::string orientation;
+
   double time;
 
   const double T;
-
-
-  // SeedingRegion *region = nullptr;
 
   // Path to the mesh file.
   const std::string mesh_file_name;
@@ -230,6 +229,8 @@ protected:
   // a triangulation that is completely distributed (i.e. each process only
   // knows about the elements it owns and its ghost elements).
   parallel::fullydistributed::Triangulation<dim> mesh;
+
+  Point<dim> center;
 
   // Finite element space.
   std::unique_ptr<FiniteElement<dim>> fe;

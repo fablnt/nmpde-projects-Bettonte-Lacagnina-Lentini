@@ -1,5 +1,7 @@
 #include "FisherKolmogorov.hpp"
 
+#include <deal.II/base/tensor.h>
+
 void
 FisherKolmogorov::setup()
 {
@@ -16,6 +18,7 @@ FisherKolmogorov::setup()
     TriangulationDescription::Utilities::create_description_from_triangulation(
       mesh_serial, MPI_COMM_WORLD);
   mesh.create_triangulation(construction_data);
+
 
   pcout << "  Number of elements = " << mesh.n_global_active_cells()
         << std::endl;
@@ -50,6 +53,28 @@ FisherKolmogorov::setup()
     DoFTools::extract_locally_relevant_dofs(dof_handler, locally_relevant_dofs);
 
     pcout << "  Number of DoFs = " << dof_handler.n_dofs() << std::endl;
+
+    // Initializing grey and white matter regions
+    {
+      pcout << "Initializing the white and grey matter regions" << std::endl;
+      for (const auto &cell : dof_handler.active_cell_iterators())
+        {
+          if (!cell->is_locally_owned())
+            continue;
+          // todo make a region class to handle coordinates
+          auto center = cell->center();
+          if ((center(0) < 33 || center(0) > 70) ||
+              (center(1) < 25 || center(1) > 120) || (center(2) > 85))
+            {
+              cell->set_material_id(1);
+            }
+        }
+    }
+
+    for (const auto &cell : dof_handler.active_cell_iterators())
+      center += cell->center();
+
+    center /= mesh.n_global_active_cells();
   }
 
   // Initialize the linear system.
@@ -117,11 +142,27 @@ FisherKolmogorov::assemble_system()
       fe_values.get_function_gradients(solution, solution_gradient_loc);
       fe_values.get_function_values(solution_old, solution_old_loc);
 
+      Tensor<1, dim> direction;
+      direction.clear();
+      if (orientation == "radial")
+        direction = compute_radial_direction(cell);
+      else if (orientation == "circumferential")
+        direction = compute_circumferential_direction(cell);
+      else if (orientation == "axon_based")
+        direction = compute_axon_based_direction(cell);
+      else
+        direction = compute_radial_direction(cell);
+
       for (unsigned int q = 0; q < n_q; ++q)
         {
-          // Evaluate coefficients on this quadrature node.
-          // const double
-          // spreading_coefficient.value(fe_values.quadrature_point(q));
+          if (cell->material_id() == 1)
+            growth_coefficient =
+              growth_coefficient_grey.value(fe_values.quadrature_point(q));
+
+          else
+            growth_coefficient =
+              growth_coefficient_white.value(fe_values.quadrature_point(q));
+
 
           for (unsigned int i = 0; i < dofs_per_cell; ++i)
             {
@@ -131,28 +172,25 @@ FisherKolmogorov::assemble_system()
                   cell_matrix(i, j) +=
                     fe_values.shape_value(i, q) * // time derivative term
                     fe_values.shape_value(j, q) / deltat * fe_values.JxW(q);
+
                   // Non-linear stiffness matrix, first term.
                   cell_matrix(i, j) +=
-
-                    scalar_product(spreading_coefficient *
+                    scalar_product(spreading_coefficient.value(
+                                     fe_values.quadrature_point(q), direction) *
                                      fe_values.shape_grad(i, q),
                                    fe_values.shape_grad(j, q)) *
                     fe_values.JxW(q);
 
-
                   // Non-linear stiffness matrix, second term.
                   cell_matrix(i, j) -=
-                    growth_coefficient.value(fe_values.quadrature_point(q)) *
-                    fe_values.shape_value(i, q) * fe_values.shape_value(j, q) *
-                    fe_values.JxW(q);
-
+                    growth_coefficient * fe_values.shape_value(i, q) *
+                    fe_values.shape_value(j, q) * fe_values.JxW(q);
 
                   // Non-linear stiffness matrix, third term.
                   cell_matrix(i, j) +=
-                    2 *
-                    growth_coefficient.value(fe_values.quadrature_point(q)) *
-                    solution_loc[q] * fe_values.shape_value(i, q) *
-                    fe_values.shape_value(j, q) * fe_values.JxW(q);
+                    2 * growth_coefficient * solution_loc[q] *
+                    fe_values.shape_value(i, q) * fe_values.shape_value(j, q) *
+                    fe_values.JxW(q);
                 }
 
               // Assemble the residual vector (with changed sign).
@@ -163,16 +201,17 @@ FisherKolmogorov::assemble_system()
 
               // Diffusion term
               cell_residual(i) -=
-                scalar_product(spreading_coefficient * solution_gradient_loc[q],
+                scalar_product(spreading_coefficient.value(
+                                 fe_values.quadrature_point(q), direction) *
+                                 solution_gradient_loc[q],
                                fe_values.shape_grad(i, q)) *
                 fe_values.JxW(q);
 
               // Growth term
-              cell_residual(i) +=
-                ((growth_coefficient.value(fe_values.quadrature_point(q)) *
-                  solution_loc[q]) *
-                 (1 - solution_loc[q])) *
-                fe_values.shape_value(i, q) * fe_values.JxW(q);
+              cell_residual(i) += ((growth_coefficient * solution_loc[q]) *
+                                   (1 - solution_loc[q])) *
+                                  fe_values.shape_value(i, q) *
+                                  fe_values.JxW(q);
 
 
               // Forcing term equals to 0, no contribution to cell_residual(i)
@@ -253,6 +292,7 @@ FisherKolmogorov::solve_newton()
     }
 }
 
+
 void
 FisherKolmogorov::solve()
 {
@@ -315,4 +355,44 @@ FisherKolmogorov::output(const unsigned int &time_step) const
 
   data_out.write_vtu_with_pvtu_record(
     "./", "output", time_step, MPI_COMM_WORLD, 3);
+}
+
+
+Tensor<1, FisherKolmogorov::dim>
+FisherKolmogorov::compute_radial_direction(const auto &cell) const
+{
+  Tensor<1, dim> radial = cell->center() - center;
+  radial /= radial.norm();
+
+  return radial;
+}
+
+Tensor<1, FisherKolmogorov::dim>
+FisherKolmogorov::compute_circumferential_direction(const auto &cell) const
+{
+  Tensor<1, dim> radial = compute_radial_direction(cell);
+  Tensor<1, dim> azimuthal;
+  Tensor<1, dim> cell_center = cell->center();
+  azimuthal[0]               = -cell_center[1];
+  azimuthal[1]               = cell_center[0];
+  azimuthal[2]               = 0.0; // No azimuthal component in z-direction
+  azimuthal /= azimuthal.norm();
+
+  // Compute circumferential direction as cross product of radial and azimuthal
+  // Tensor<1, dim> circumferential = cross_product(radial, azimuthal);
+
+  return radial; // circumferential;
+}
+
+Tensor<1, FisherKolmogorov::dim>
+FisherKolmogorov::compute_axon_based_direction(const auto &cell) const
+{
+  if ((cell->center()(0) < 60 && cell->center()(0) > 40) &&
+      (cell->center()(1) < 34 && cell->center()(1) > 64) &&
+      (cell->center()(2) < 50 && cell->center()(2) > 80))
+    {
+      return compute_circumferential_direction(cell);
+    }
+  else
+    return compute_radial_direction(cell);
 }
