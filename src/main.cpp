@@ -24,7 +24,7 @@ main(int argc, char *argv[])
                            dext,
                            daxn,
                            "Amyloid-Beta deposits",
-                           "radial");
+                           "axon-based");
   problem.setup();
   problem.solve();
 }

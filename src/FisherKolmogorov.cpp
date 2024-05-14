@@ -1,7 +1,5 @@
 #include "FisherKolmogorov.hpp"
 
-#include <deal.II/base/tensor.h>
-
 void
 FisherKolmogorov::setup()
 {
@@ -54,7 +52,7 @@ FisherKolmogorov::setup()
 
     pcout << "  Number of DoFs = " << dof_handler.n_dofs() << std::endl;
 
-    // Initializing grey and white matter regions
+    // Initialize grey and white matter regions
     {
       pcout << "Initializing the white and grey matter regions" << std::endl;
       for (const auto &cell : dof_handler.active_cell_iterators())
@@ -71,6 +69,7 @@ FisherKolmogorov::setup()
         }
     }
 
+    // Compute the center of the domain.
     for (const auto &cell : dof_handler.active_cell_iterators())
       center += cell->center();
 
@@ -128,6 +127,8 @@ FisherKolmogorov::assemble_system()
   // Value of the solution at previous timestep (un) on current cell.
   std::vector<double> solution_old_loc(n_q); // un+1
 
+  double growth_coefficient;
+
   for (const auto &cell : dof_handler.active_cell_iterators())
     {
       if (!cell->is_locally_owned())
@@ -144,11 +145,12 @@ FisherKolmogorov::assemble_system()
 
       Tensor<1, dim> direction;
       direction.clear();
+
       if (orientation == "radial")
         direction = compute_radial_direction(cell);
       else if (orientation == "circumferential")
         direction = compute_circumferential_direction(cell);
-      else if (orientation == "axon_based")
+      else if (orientation == "axon-based")
         direction = compute_axon_based_direction(cell);
       else
         direction = compute_radial_direction(cell);
@@ -357,9 +359,11 @@ FisherKolmogorov::output(const unsigned int &time_step) const
     "./", "output", time_step, MPI_COMM_WORLD, 3);
 }
 
-
+// Compute the radial direction.
 Tensor<1, FisherKolmogorov::dim>
-FisherKolmogorov::compute_radial_direction(const auto &cell) const
+FisherKolmogorov::compute_radial_direction(
+  const dealii::TriaActiveIterator<dealii::DoFCellAccessor<dim, dim, false>>
+    &cell) const
 {
   Tensor<1, dim> radial = cell->center() - center;
   radial /= radial.norm();
@@ -367,8 +371,11 @@ FisherKolmogorov::compute_radial_direction(const auto &cell) const
   return radial;
 }
 
+// Compute the circumferential direction.
 Tensor<1, FisherKolmogorov::dim>
-FisherKolmogorov::compute_circumferential_direction(const auto &cell) const
+FisherKolmogorov::compute_circumferential_direction(
+  const dealii::TriaActiveIterator<dealii::DoFCellAccessor<dim, dim, false>>
+    &cell) const
 {
   Tensor<1, dim> radial = compute_radial_direction(cell);
   Tensor<1, dim> azimuthal;
@@ -379,16 +386,19 @@ FisherKolmogorov::compute_circumferential_direction(const auto &cell) const
   azimuthal /= azimuthal.norm();
 
   // Compute circumferential direction as cross product of radial and azimuthal
-  // Tensor<1, dim> circumferential = cross_product(radial, azimuthal);
+  // Tensor<1, dim> circumferential = cross_product(radial, azimuthal); todo
 
   return radial; // circumferential;
 }
 
+// Compute the axon-based direction.
 Tensor<1, FisherKolmogorov::dim>
-FisherKolmogorov::compute_axon_based_direction(const auto &cell) const
+FisherKolmogorov::compute_axon_based_direction(
+  const dealii::TriaActiveIterator<dealii::DoFCellAccessor<dim, dim, false>>
+    &cell) const
 {
   if ((cell->center()(0) < 60 && cell->center()(0) > 40) &&
-      (cell->center()(1) < 34 && cell->center()(1) > 64) &&
+      (cell->center()(1) < 34 && cell->center()(1) > 100) &&
       (cell->center()(2) < 50 && cell->center()(2) > 80))
     {
       return compute_circumferential_direction(cell);

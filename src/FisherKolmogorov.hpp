@@ -58,6 +58,8 @@ public:
   // Physical dimension (1D, 3D)
   static constexpr unsigned int dim = 3;
 
+  // Spreading coefficient D = dext * I + daxn * n x n, where x is a tensor
+  // product and n is the fiber orientation
   class SpreadingCoefficient
   {
   public:
@@ -66,15 +68,18 @@ public:
       , daxn(daxn_)
     {}
 
+    // Returns the spreading coefficient D = dext * I + daxn * n x n
     Tensor<2, dim>
     value(const Point<dim> & /*p*/, const Tensor<1, dim> &direction) const
     {
       Tensor<2, dim> D;
-
+      D.clear();
       for (unsigned int i = 0; i < dim; i++)
         D[i][i] = dext;
 
-      Tensor<2, dim> S = outer_product(direction, direction) * daxn;
+      Tensor<2, dim> S;
+      S.clear();
+      S = outer_product(direction, direction) * daxn;
 
       return D + S;
     }
@@ -122,13 +127,12 @@ public:
     value(const Point<dim> &p,
           const unsigned int /*component*/ = 0) const override
     {
-      if ((p[0] > 63 /*seeding_region->x_min*/ && p[0] < 81
-           /*seeding_region->x_max*/) &&
-          (p[1] > 60 /*seeding_region->y_min*/ && p[1] < 90
-           /*seeding_region->y_max*/) &&
-          (p[2] > 46 /*seeding_region->z_min*/ &&
-           p[2] < 67 /*seeding_region->z_max*/))
-        return 0.1;
+      if ((p[0] > seeding_region->x_min && p[0] < seeding_region->x_max) &&
+          (p[1] > seeding_region->y_min && p[1] < seeding_region->y_max) &&
+          (p[2] > seeding_region->z_min && p[2] < seeding_region->z_max))
+        {
+          return 0.1;
+        }
       else
         return 0.0;
     }
@@ -185,11 +189,19 @@ protected:
   output(const unsigned int &time_step) const;
 
   Tensor<1, dim>
-  compute_radial_direction(const auto &cell) const;
+  compute_radial_direction(
+    const dealii::TriaActiveIterator<dealii::DoFCellAccessor<dim, dim, false>>
+      &cell) const;
+
   Tensor<1, dim>
-  compute_circumferential_direction(const auto &cell) const;
+  compute_circumferential_direction(
+    const dealii::TriaActiveIterator<dealii::DoFCellAccessor<dim, dim, false>>
+      &cell) const;
+
   Tensor<1, dim>
-  compute_axon_based_direction(const auto &cell) const;
+  compute_axon_based_direction(
+    const dealii::TriaActiveIterator<dealii::DoFCellAccessor<dim, dim, false>>
+      &cell) const;
 
   // Number of MPI processes.
   const unsigned int mpi_size;
@@ -201,7 +213,6 @@ protected:
   ConditionalOStream pcout;
 
   // Coefficient alpha
-  double                 growth_coefficient;
   GrowthCoefficientWhite growth_coefficient_white;
   GrowthCoefficientGrey  growth_coefficient_grey;
 
