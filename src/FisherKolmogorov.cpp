@@ -25,10 +25,7 @@ FisherKolmogorov::setup()
   {
     pcout << "Initializing the finite element space" << std::endl;
 
-    if (dim == 1)
-      fe = std::make_unique<FE_Q<dim>>(r);
-    else
-      fe = std::make_unique<FE_SimplexP<dim>>(r);
+    fe = std::make_unique<FE_SimplexP<dim>>(r);
 
     pcout << "  Degree                     = " << fe->degree << std::endl;
     pcout << "  DoFs per cell              = " << fe->dofs_per_cell
@@ -51,29 +48,38 @@ FisherKolmogorov::setup()
     DoFTools::extract_locally_relevant_dofs(dof_handler, locally_relevant_dofs);
 
     pcout << "  Number of DoFs = " << dof_handler.n_dofs() << std::endl;
+  }
 
-    // Initialize grey and white matter regions
-    {
-      pcout << "Initializing the white and grey matter regions" << std::endl;
-      for (const auto &cell : dof_handler.active_cell_iterators())
-        {
-          if (!cell->is_locally_owned())
-            continue;
-          // todo make a region class to handle coordinates
-          auto center = cell->center();
-          if ((center(0) < 33 || center(0) > 70) ||
-              (center(1) < 25 || center(1) > 120) || (center(2) > 85))
-            {
-              cell->set_material_id(1);
-            }
-        }
-    }
-
-    // Compute the center of the domain.
+  // Initialize grey and white matter regions
+  {
+    pcout << "Initializing the white and grey matter regions" << std::endl;
     for (const auto &cell : dof_handler.active_cell_iterators())
-      center += cell->center();
+      {
+        if (!cell->is_locally_owned())
+          continue;
+        // todo make a region class to handle coordinates
+        auto center = cell->center();
+        if ((center(0) < 33 || center(0) > 70) ||
+            (center(1) < 25 || center(1) > 120) || (center(2) > 85))
+          {
+            cell->set_material_id(1);
+          }
+      }
+  }
 
-    center /= mesh.n_global_active_cells();
+  // Compute the center of the domain.
+  {
+    Point<dim> local_center;
+    local_center.clear();
+    for (const auto &cell : dof_handler.active_cell_iterators())
+      local_center += cell->center();
+
+    MPI_Allreduce(
+      &local_center, &global_center, dim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    global_center /= mesh.n_global_active_cells();
+
+    std::cout << "Center of the domain = " << global_center << std::endl;
   }
 
   // Initialize the linear system.
@@ -377,18 +383,22 @@ FisherKolmogorov::compute_circumferential_direction(
   const dealii::TriaActiveIterator<dealii::DoFCellAccessor<dim, dim, false>>
     &cell) const
 {
-  Tensor<1, dim> radial = compute_radial_direction(cell);
-  Tensor<1, dim> azimuthal;
+  Tensor<1, dim> radial      = compute_radial_direction(cell);
   Tensor<1, dim> cell_center = cell->center();
-  azimuthal[0]               = -cell_center[1];
-  azimuthal[1]               = cell_center[0];
-  azimuthal[2]               = 0.0; // No azimuthal component in z-direction
+  // Azimuthal direction perpendicular to the radial direction
+  Tensor<1, dim> azimuthal;
+  azimuthal[0] = -cell_center[1];
+  azimuthal[1] = cell_center[0];
+  azimuthal[2] = 0.0;
   azimuthal /= azimuthal.norm();
 
-  // Compute circumferential direction as cross product of radial and azimuthal
-  // Tensor<1, dim> circumferential = cross_product(radial, azimuthal); todo
+  // Cross product between radial and azimuthal directions
+  Tensor<1, dim> circumferential;
+  circumferential[0] = radial[1] * azimuthal[2] - radial[2] * azimuthal[1];
+  circumferential[1] = radial[2] * azimuthal[0] - radial[0] * azimuthal[2];
+  circumferential[2] = radial[0] * azimuthal[1] - radial[1] * azimuthal[0];
 
-  return radial; // circumferential;
+  return circumferential;
 }
 
 // Compute the axon-based direction.

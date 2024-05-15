@@ -40,6 +40,8 @@
 #include <deal.II/numerics/data_out.h>     //used in output method
 #include <deal.II/numerics/vector_tools.h> //used in solve method
 
+#include <boost/geometry.hpp>
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -58,7 +60,7 @@ public:
   // Physical dimension (1D, 3D)
   static constexpr unsigned int dim = 3;
 
-  // Spreading coefficient D = dext * I + daxn * n x n, where x is a tensor
+  // Spreading coefficient D = dext * I + daxn * n x n, where x is the tensor
   // product and n is the fiber orientation
   class SpreadingCoefficient
   {
@@ -212,9 +214,11 @@ protected:
   // Parallel output stream.
   ConditionalOStream pcout;
 
-  // Coefficient alpha
+  // Coefficient alpha for white matter
   GrowthCoefficientWhite growth_coefficient_white;
-  GrowthCoefficientGrey  growth_coefficient_grey;
+
+  // Coefficient alpha for grey matter
+  GrowthCoefficientGrey growth_coefficient_grey;
 
   // spreading coefficient D
   SpreadingCoefficient spreading_coefficient;
@@ -222,6 +226,7 @@ protected:
   // Initial concentration c(t = 0)
   FunctionC0 c_0;
 
+  // Fiber orientation
   std::string orientation;
 
   double time;
@@ -236,12 +241,13 @@ protected:
 
   const double deltat;
 
+  // Center of the mesh.
+  Point<dim> global_center;
+
   // Triangulation. The parallel::fullydistributed::Triangulation class manages
   // a triangulation that is completely distributed (i.e. each process only
   // knows about the elements it owns and its ghost elements).
   parallel::fullydistributed::Triangulation<dim> mesh;
-
-  Point<dim> center;
 
   // Finite element space.
   std::unique_ptr<FiniteElement<dim>> fe;
