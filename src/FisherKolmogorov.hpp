@@ -65,14 +65,14 @@ public:
   class SpreadingCoefficient
   {
   public:
-    SpreadingCoefficient(const double &dext_, const double &daxn_)
-      : dext(dext_)
-      , daxn(daxn_)
+    SpreadingCoefficient()
     {}
 
     // Returns the spreading coefficient D = dext * I + daxn * n x n
     Tensor<2, dim>
-    value(const Point<dim> & /*p*/, const Tensor<1, dim> &direction) const
+    value(const double         &dext,
+          const double         &daxn,
+          const Tensor<1, dim> &direction) const
     {
       Tensor<2, dim> D;
       D.clear();
@@ -85,9 +85,66 @@ public:
 
       return D + S;
     }
+  };
 
-  private:
-    const double dext, daxn;
+  // d_ext white matter
+  class IsotropicDiffusionCoefficientWhite : public Function<dim>
+  {
+  public:
+    IsotropicDiffusionCoefficientWhite()
+    {}
+
+    virtual double
+    value(const Point<dim> & /*p*/,
+          const unsigned int /*component*/ = 0) const override
+    {
+      return 1.5;
+    }
+  };
+
+  // d_ext grey matter
+  class IsotropicDiffusionCoefficientGrey : public Function<dim>
+  {
+  public:
+    IsotropicDiffusionCoefficientGrey()
+    {}
+
+    virtual double
+    value(const Point<dim> & /*p*/,
+          const unsigned int /*component*/ = 0) const override
+    {
+      return 1.5;
+    }
+  };
+
+  // d_axn white matter
+  class AnisotropicDiffusionCoefficientWhite : public Function<dim>
+  {
+  public:
+    AnisotropicDiffusionCoefficientWhite()
+    {}
+
+    virtual double
+    value(const Point<dim> & /*p*/,
+          const unsigned int /*component*/ = 0) const override
+    {
+      return 3.0;
+    }
+  };
+
+  // d_axn grey matter
+  class AnisotropicDiffusionCoefficientGrey : public Function<dim>
+  {
+  public:
+    AnisotropicDiffusionCoefficientGrey()
+    {}
+
+    virtual double
+    value(const Point<dim> & /*p*/,
+          const unsigned int /*component*/ = 0) const override
+    {
+      return 0.0;
+    }
   };
 
   class GrowthCoefficientWhite : public Function<dim>
@@ -100,7 +157,7 @@ public:
     value(const Point<dim> & /*p*/,
           const unsigned int /*component*/ = 0) const override
     {
-      return 0.5;
+      return 0.6;
     }
   };
 
@@ -114,7 +171,7 @@ public:
     value(const Point<dim> & /*p*/,
           const unsigned int /*component*/ = 0) const override
     {
-      return 0.5;
+      return 0.3;
     }
   };
 
@@ -147,14 +204,11 @@ public:
                    const unsigned int &r_,
                    const double       &deltat_,
                    const double       &T_,
-                   const double       &dext_,
-                   const double       &daxn_,
                    const std::string  &seeding_region_,
                    const std::string  &orientation_)
     : mpi_size(Utilities::MPI::n_mpi_processes(MPI_COMM_WORLD))
     , mpi_rank(Utilities::MPI::this_mpi_process(MPI_COMM_WORLD))
     , pcout(std::cout, mpi_rank == 0)
-    , spreading_coefficient(dext_, daxn_)
     , c_0(seeding_region_)
     , orientation(orientation_)
     , T(T_)
@@ -222,6 +276,17 @@ protected:
 
   // spreading coefficient D
   SpreadingCoefficient spreading_coefficient;
+
+  // Diffusion coefficient for white matter
+  IsotropicDiffusionCoefficientWhite isotropic_coefficient_white;
+
+  // Diffusion coefficient for grey matter
+  IsotropicDiffusionCoefficientGrey isotropic_coefficient_grey;
+
+  AnisotropicDiffusionCoefficientGrey anisotropic_coefficient_grey;
+
+  AnisotropicDiffusionCoefficientWhite anisotropic_coefficient_white;
+
 
   // Initial concentration c(t = 0)
   FunctionC0 c_0;

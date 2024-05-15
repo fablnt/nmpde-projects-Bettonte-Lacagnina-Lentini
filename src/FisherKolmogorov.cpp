@@ -133,8 +133,8 @@ FisherKolmogorov::assemble_system()
   // Value of the solution at previous timestep (un) on current cell.
   std::vector<double> solution_old_loc(n_q); // un+1
 
-  double growth_coefficient;
-
+  double         growth_coefficient_loc;
+  Tensor<2, dim> spreading_coefficient_loc;
   for (const auto &cell : dof_handler.active_cell_iterators())
     {
       if (!cell->is_locally_owned())
@@ -159,17 +159,35 @@ FisherKolmogorov::assemble_system()
       else if (orientation == "axon-based")
         direction = compute_axon_based_direction(cell);
       else
-        direction = compute_radial_direction(cell);
+        throw std::invalid_argument("Invalid orientation");
 
       for (unsigned int q = 0; q < n_q; ++q)
         {
           if (cell->material_id() == 1)
-            growth_coefficient =
-              growth_coefficient_grey.value(fe_values.quadrature_point(q));
+            {
+              growth_coefficient_loc =
+                growth_coefficient_grey.value(fe_values.quadrature_point(q));
+
+              spreading_coefficient_loc =
+                spreading_coefficient.value(isotropic_coefficient_grey.value(
+                                              fe_values.quadrature_point(q)),
+                                            anisotropic_coefficient_grey.value(
+                                              fe_values.quadrature_point(q)),
+                                            direction);
+            }
 
           else
-            growth_coefficient =
-              growth_coefficient_white.value(fe_values.quadrature_point(q));
+            {
+              growth_coefficient_loc =
+                growth_coefficient_white.value(fe_values.quadrature_point(q));
+
+              spreading_coefficient_loc =
+                spreading_coefficient.value(isotropic_coefficient_white.value(
+                                              fe_values.quadrature_point(q)),
+                                            anisotropic_coefficient_white.value(
+                                              fe_values.quadrature_point(q)),
+                                            direction);
+            }
 
 
           for (unsigned int i = 0; i < dofs_per_cell; ++i)
@@ -183,20 +201,19 @@ FisherKolmogorov::assemble_system()
 
                   // Non-linear stiffness matrix, first term.
                   cell_matrix(i, j) +=
-                    scalar_product(spreading_coefficient.value(
-                                     fe_values.quadrature_point(q), direction) *
+                    scalar_product(spreading_coefficient_loc *
                                      fe_values.shape_grad(i, q),
                                    fe_values.shape_grad(j, q)) *
                     fe_values.JxW(q);
 
                   // Non-linear stiffness matrix, second term.
                   cell_matrix(i, j) -=
-                    growth_coefficient * fe_values.shape_value(i, q) *
+                    growth_coefficient_loc * fe_values.shape_value(i, q) *
                     fe_values.shape_value(j, q) * fe_values.JxW(q);
 
                   // Non-linear stiffness matrix, third term.
                   cell_matrix(i, j) +=
-                    2 * growth_coefficient * solution_loc[q] *
+                    2 * growth_coefficient_loc * solution_loc[q] *
                     fe_values.shape_value(i, q) * fe_values.shape_value(j, q) *
                     fe_values.JxW(q);
                 }
@@ -208,15 +225,13 @@ FisherKolmogorov::assemble_system()
                                   fe_values.JxW(q);
 
               // Diffusion term
-              cell_residual(i) -=
-                scalar_product(spreading_coefficient.value(
-                                 fe_values.quadrature_point(q), direction) *
-                                 solution_gradient_loc[q],
-                               fe_values.shape_grad(i, q)) *
-                fe_values.JxW(q);
+              cell_residual(i) -= scalar_product(spreading_coefficient_loc *
+                                                   solution_gradient_loc[q],
+                                                 fe_values.shape_grad(i, q)) *
+                                  fe_values.JxW(q);
 
               // Growth term
-              cell_residual(i) += ((growth_coefficient * solution_loc[q]) *
+              cell_residual(i) += ((growth_coefficient_loc * solution_loc[q]) *
                                    (1 - solution_loc[q])) *
                                   fe_values.shape_value(i, q) *
                                   fe_values.JxW(q);
@@ -371,7 +386,7 @@ FisherKolmogorov::compute_radial_direction(
   const dealii::TriaActiveIterator<dealii::DoFCellAccessor<dim, dim, false>>
     &cell) const
 {
-  Tensor<1, dim> radial = cell->center() - center;
+  Tensor<1, dim> radial = cell->center() - global_center;
   radial /= radial.norm();
 
   return radial;
@@ -408,8 +423,8 @@ FisherKolmogorov::compute_axon_based_direction(
     &cell) const
 {
   if ((cell->center()(0) < 60 && cell->center()(0) > 40) &&
-      (cell->center()(1) < 34 && cell->center()(1) > 100) &&
-      (cell->center()(2) < 50 && cell->center()(2) > 80))
+      (cell->center()(1) < 110 && cell->center()(1) > 34) &&
+      (cell->center()(2) < 80 && cell->center()(2) > 50))
     {
       return compute_circumferential_direction(cell);
     }
