@@ -48,7 +48,7 @@
 #include <memory>
 #include <string>
 
-#include "SeedingRegions.hpp"
+#include "BrainRegions.hpp"
 
 
 using namespace dealii;
@@ -58,7 +58,7 @@ class FisherKolmogorov
 {
 public:
   // Physical dimension (1D, 3D)
-  static constexpr unsigned int dim = 3;
+  static constexpr unsigned int dim = 2;
 
   // Spreading coefficient D = dext * I + daxn * n x n, where x is the tensor
   // product and n is the fiber orientation
