@@ -58,9 +58,7 @@ FisherKolmogorov::setup()
         if (!cell->is_locally_owned())
           continue;
         // todo make a region class to handle coordinates
-        auto center = cell->center();
-        if ((center(0) < 33 || center(0) > 70) ||
-            (center(1) < 25 || center(1) > 120) || (center(2) > 85))
+        if (Grey_matter<dim>::check_region(cell->center()))
           {
             cell->set_material_id(1);
           }
@@ -422,9 +420,7 @@ FisherKolmogorov::compute_axon_based_direction(
   const dealii::TriaActiveIterator<dealii::DoFCellAccessor<dim, dim, false>>
     &cell) const
 {
-  if ((cell->center()(0) < 60 && cell->center()(0) > 40) &&
-      (cell->center()(1) < 110 && cell->center()(1) > 34) &&
-      (cell->center()(2) < 80 && cell->center()(2) > 50))
+  if (Axonal_region<dim>::check_region(cell->center()))
     {
       return compute_circumferential_direction(cell);
     }

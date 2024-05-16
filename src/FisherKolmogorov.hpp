@@ -179,16 +179,14 @@ public:
   {
   public:
     FunctionC0(const std::string &seeding_region_)
-      : seeding_region(std::move(getSeedingRegion(seeding_region_)))
+      : seeding_region(std::move(getSeedingRegion<dim>(seeding_region_)))
     {}
 
     virtual double
     value(const Point<dim> &p,
           const unsigned int /*component*/ = 0) const override
     {
-      if ((p[0] > seeding_region->x_min && p[0] < seeding_region->x_max) &&
-          (p[1] > seeding_region->y_min && p[1] < seeding_region->y_max) &&
-          (p[2] > seeding_region->z_min && p[2] < seeding_region->z_max))
+      if (seeding_region->check_region(p))
         {
           return 0.1;
         }
@@ -197,7 +195,7 @@ public:
     }
 
   private:
-    const std::unique_ptr<SeedingRegion> seeding_region;
+    const std::unique_ptr<Region<dim>> seeding_region;
   };
 
   FisherKolmogorov(const std::string  &mesh_file_name_,
