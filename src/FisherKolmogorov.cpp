@@ -57,7 +57,7 @@ FisherKolmogorov::setup()
       {
         if (!cell->is_locally_owned())
           continue;
-        // todo make a region class to handle coordinates
+
         if (Grey_matter<dim>::check_region(cell->center()))
           {
             cell->set_material_id(1);
@@ -133,6 +133,7 @@ FisherKolmogorov::assemble_system()
 
   double         growth_coefficient_loc;
   Tensor<2, dim> spreading_coefficient_loc;
+
   for (const auto &cell : dof_handler.active_cell_iterators())
     {
       if (!cell->is_locally_owned())
@@ -149,15 +150,11 @@ FisherKolmogorov::assemble_system()
 
       Tensor<1, dim> direction;
       direction.clear();
+      Point<dim> cell_center = cell->center();
 
-      if (orientation == "radial")
-        direction = compute_radial_direction(cell);
-      else if (orientation == "circumferential")
-        direction = compute_circumferential_direction(cell);
-      else if (orientation == "axon-based")
-        direction = compute_axon_based_direction(cell);
-      else
-        throw std::invalid_argument("Invalid orientation");
+      direction = Axonal_region<dim>::get_axonal_direction(cell_center,
+                                                           global_center,
+                                                           orientation);
 
       for (unsigned int q = 0; q < n_q; ++q)
         {
@@ -186,7 +183,6 @@ FisherKolmogorov::assemble_system()
                                               fe_values.quadrature_point(q)),
                                             direction);
             }
-
 
           for (unsigned int i = 0; i < dofs_per_cell; ++i)
             {
@@ -376,54 +372,4 @@ FisherKolmogorov::output(const unsigned int &time_step) const
 
   data_out.write_vtu_with_pvtu_record(
     "./", "output", time_step, MPI_COMM_WORLD, 3);
-}
-
-// Compute the radial direction.
-Tensor<1, FisherKolmogorov::dim>
-FisherKolmogorov::compute_radial_direction(
-  const dealii::TriaActiveIterator<dealii::DoFCellAccessor<dim, dim, false>>
-    &cell) const
-{
-  Tensor<1, dim> radial = cell->center() - global_center;
-  radial /= radial.norm();
-
-  return radial;
-}
-
-// Compute the circumferential direction.
-Tensor<1, FisherKolmogorov::dim>
-FisherKolmogorov::compute_circumferential_direction(
-  const dealii::TriaActiveIterator<dealii::DoFCellAccessor<dim, dim, false>>
-    &cell) const
-{
-  Tensor<1, dim> radial      = compute_radial_direction(cell);
-  Tensor<1, dim> cell_center = cell->center();
-  // Azimuthal direction perpendicular to the radial direction
-  Tensor<1, dim> azimuthal;
-  azimuthal[0] = -cell_center[1];
-  azimuthal[1] = cell_center[0];
-  azimuthal[2] = 0.0;
-  azimuthal /= azimuthal.norm();
-
-  // Cross product between radial and azimuthal directions
-  Tensor<1, dim> circumferential;
-  circumferential[0] = radial[1] * azimuthal[2] - radial[2] * azimuthal[1];
-  circumferential[1] = radial[2] * azimuthal[0] - radial[0] * azimuthal[2];
-  circumferential[2] = radial[0] * azimuthal[1] - radial[1] * azimuthal[0];
-
-  return circumferential;
-}
-
-// Compute the axon-based direction.
-Tensor<1, FisherKolmogorov::dim>
-FisherKolmogorov::compute_axon_based_direction(
-  const dealii::TriaActiveIterator<dealii::DoFCellAccessor<dim, dim, false>>
-    &cell) const
-{
-  if (Axonal_region<dim>::check_region(cell->center()))
-    {
-      return compute_circumferential_direction(cell);
-    }
-  else
-    return compute_radial_direction(cell);
 }

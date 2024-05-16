@@ -242,21 +242,6 @@ protected:
   void
   output(const unsigned int &time_step) const;
 
-  Tensor<1, dim>
-  compute_radial_direction(
-    const dealii::TriaActiveIterator<dealii::DoFCellAccessor<dim, dim, false>>
-      &cell) const;
-
-  Tensor<1, dim>
-  compute_circumferential_direction(
-    const dealii::TriaActiveIterator<dealii::DoFCellAccessor<dim, dim, false>>
-      &cell) const;
-
-  Tensor<1, dim>
-  compute_axon_based_direction(
-    const dealii::TriaActiveIterator<dealii::DoFCellAccessor<dim, dim, false>>
-      &cell) const;
-
   // Number of MPI processes.
   const unsigned int mpi_size;
 
@@ -284,7 +269,6 @@ protected:
   AnisotropicDiffusionCoefficientGrey anisotropic_coefficient_grey;
 
   AnisotropicDiffusionCoefficientWhite anisotropic_coefficient_white;
-
 
   // Initial concentration c(t = 0)
   FunctionC0 c_0;
