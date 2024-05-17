@@ -70,7 +70,11 @@ FisherKolmogorov::setup()
     Point<dim> local_center;
     local_center.clear();
     for (const auto &cell : dof_handler.active_cell_iterators())
-      local_center += cell->center();
+      {
+        if (!cell->is_locally_owned())
+          continue;
+        local_center += cell->center();
+      }
 
     MPI_Allreduce(
       &local_center, &global_center, dim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);

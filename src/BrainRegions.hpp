@@ -102,7 +102,10 @@ public:
   virtual bool
   check_region(const Point<2> &p) const override
   {
-    return ((p[0] > 0.0 && p[0] < 20.0) && (p[1] > 0.0 && p[1] < 20.0));
+    return ((p[0] > -70 && p[0] < -12) ||
+            ((p[0] > -12 && p[0] < 25) && (p[1] > 8 && p[1] < 27)) ||
+            (p[0] > 25 && p[0] < 70) ||
+            ((p[0] > -12 && p[0] < -1) && p[1] > 27));
   }
 };
 
@@ -274,14 +277,40 @@ public:
     Tensor<1, 3> radial =
       Axonal_region<3>::compute_radial_direction(p, global_center);
 
-    // Azimuthal direction perpendicular to the radial direction
+    Tensor<1, 3> arbitrary_vector;
+    if (std::abs(radial[0]) < std::abs(radial[1]) &&
+        std::abs(radial[0]) < std::abs(radial[2]))
+      {
+        arbitrary_vector[0] = 1.0;
+        arbitrary_vector[1] = 0.0;
+        arbitrary_vector[2] = 0.0;
+      }
+    else if (std::abs(radial[1]) < std::abs(radial[2]))
+      {
+        arbitrary_vector[0] = 0.0;
+        arbitrary_vector[1] = 1.0;
+        arbitrary_vector[2] = 0.0;
+      }
+    else
+      {
+        arbitrary_vector[0] = 0.0;
+        arbitrary_vector[1] = 0.0;
+        arbitrary_vector[2] = 1.0;
+      }
+
+    // Compute the azimuthal direction as the cross product of radial and
+    // arbitrary_vector
     Tensor<1, 3> azimuthal;
-    azimuthal[0] = -p[1];
-    azimuthal[1] = p[0];
-    azimuthal[2] = 0.0;
+    azimuthal[0] =
+      radial[1] * arbitrary_vector[2] - radial[2] * arbitrary_vector[1];
+    azimuthal[1] =
+      radial[2] * arbitrary_vector[0] - radial[0] * arbitrary_vector[2];
+    azimuthal[2] =
+      radial[0] * arbitrary_vector[1] - radial[1] * arbitrary_vector[0];
+
+    // Normalize the azimuthal vector
     azimuthal /= azimuthal.norm();
 
-    // Cross product between radial and azimuthal directions
     Tensor<1, 3> circumferential;
     circumferential[0] = radial[1] * azimuthal[2] - radial[2] * azimuthal[1];
     circumferential[1] = radial[2] * azimuthal[0] - radial[0] * azimuthal[2];
