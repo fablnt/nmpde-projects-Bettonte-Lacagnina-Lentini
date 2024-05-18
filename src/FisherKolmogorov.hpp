@@ -50,25 +50,38 @@
 
 #include "BrainRegions.hpp"
 
-
 using namespace dealii;
 
-
+/**
+ * This class is used to define the Fisher-Kolmogorov equation and solve it
+ * numerically.
+ */
 class FisherKolmogorov
 {
 public:
-  // Physical dimension (1D, 3D)
-  static constexpr unsigned int dim = 2;
+  static constexpr unsigned int dim = 3;
 
-  // Spreading coefficient D = dext * I + daxn * n x n, where x is the tensor
-  // product and n is the fiber orientation
+  /**
+   * This class is used to define the spreading coefficient D.
+   */
   class SpreadingCoefficient
   {
   public:
     SpreadingCoefficient()
     {}
 
-    // Returns the spreading coefficient D = dext * I + daxn * n x n
+    /**
+     * Compute the spreading coefficient D as:
+     * \[
+     * D = d_{ext}} \cdot \mathbf{I} + d_{axn} \cdot \mathbf{n} \otimes
+     * \mathbf{n}
+     * \]
+     *
+     * @param dext isotropic diffusion coefficient
+     * @param daxn anisotropic diffusion coefficient
+     * @param direction fiber orientation
+     * @return Tensor<2, dim> the spreading coefficient D
+     */
     Tensor<2, dim>
     value(const double         &dext,
           const double         &daxn,
@@ -87,7 +100,10 @@ public:
     }
   };
 
-  // d_ext white matter
+  /**
+   * This class is used to define the isotropic diffusion coefficient dext for
+   * white matter.
+   */
   class IsotropicDiffusionCoefficientWhite : public Function<dim>
   {
   public:
@@ -102,7 +118,10 @@ public:
     }
   };
 
-  // d_ext grey matter
+  /**
+   * This class is used to define the isotropic diffusion coefficient dext for
+   * grey matter.
+   */
   class IsotropicDiffusionCoefficientGrey : public Function<dim>
   {
   public:
@@ -117,7 +136,10 @@ public:
     }
   };
 
-  // d_axn white matter
+  /**
+   * This class is used to define the anisotropic diffusion coefficient daxn for
+   * white matter.
+   */
   class AnisotropicDiffusionCoefficientWhite : public Function<dim>
   {
   public:
@@ -132,7 +154,10 @@ public:
     }
   };
 
-  // d_axn grey matter
+  /**
+   * This class is used to define the anisotropic diffusion coefficient daxn for
+   * grey matter.
+   */
   class AnisotropicDiffusionCoefficientGrey : public Function<dim>
   {
   public:
@@ -147,6 +172,9 @@ public:
     }
   };
 
+  /**
+   * This class is used to define the growth coefficient alpha for white matter.
+   */
   class GrowthCoefficientWhite : public Function<dim>
   {
   public:
@@ -161,6 +189,9 @@ public:
     }
   };
 
+  /**
+   * This class is used to define the growth coefficient alpha for grey matter.
+   */
   class GrowthCoefficientGrey : public Function<dim>
   {
   public:
@@ -175,6 +206,9 @@ public:
     }
   };
 
+  /**
+   * This class is used to define the initial concentration c(t = 0).
+   */
   class FunctionC0 : public Function<dim>
   {
   public:
@@ -195,7 +229,7 @@ public:
     }
 
   private:
-    const std::unique_ptr<Region<dim>> seeding_region;
+    const std::unique_ptr<SeedingRegion<dim>> seeding_region;
   };
 
   FisherKolmogorov(const std::string  &mesh_file_name_,
@@ -216,61 +250,46 @@ public:
     , mesh(MPI_COMM_WORLD)
   {}
 
-  // setup the problem
   void
   setup();
 
-  // Solve the problem.
   void
   solve();
 
-
 protected:
-  // Assemble the tangent problem.
   void
   assemble_system();
 
-  // Solve the linear system associated to the tangent problem.
   void
   solve_linear_system();
 
-  // Solve the problem for one time step using Newton's method.
   void
   solve_newton();
 
-  // Output
   void
   output(const unsigned int &time_step) const;
 
-  // Number of MPI processes.
   const unsigned int mpi_size;
 
-  // This MPI process.
   const unsigned int mpi_rank;
 
   // Parallel output stream.
   ConditionalOStream pcout;
 
-  // Coefficient alpha for white matter
   GrowthCoefficientWhite growth_coefficient_white;
 
-  // Coefficient alpha for grey matter
   GrowthCoefficientGrey growth_coefficient_grey;
 
-  // spreading coefficient D
   SpreadingCoefficient spreading_coefficient;
 
-  // Diffusion coefficient for white matter
   IsotropicDiffusionCoefficientWhite isotropic_coefficient_white;
 
-  // Diffusion coefficient for grey matter
   IsotropicDiffusionCoefficientGrey isotropic_coefficient_grey;
 
   AnisotropicDiffusionCoefficientGrey anisotropic_coefficient_grey;
 
   AnisotropicDiffusionCoefficientWhite anisotropic_coefficient_white;
 
-  // Initial concentration c(t = 0)
   FunctionC0 c_0;
 
   // Fiber orientation
@@ -280,15 +299,12 @@ protected:
 
   const double T;
 
-  // Path to the mesh file.
   const std::string mesh_file_name;
 
-  // Polynomial degree.
   const unsigned int r;
 
   const double deltat;
 
-  // Center of the mesh.
   Point<dim> global_center;
 
   // Triangulation. The parallel::fullydistributed::Triangulation class manages
