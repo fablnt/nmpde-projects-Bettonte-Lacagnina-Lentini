@@ -57,7 +57,7 @@ using namespace dealii;
 class FisherKolmogorov
 {
 public:
-  // Physical dimension (1D, 3D)
+  // Physical dimension (2D, 3D)
   static constexpr unsigned int dim = 2;
 
   // Spreading coefficient D = dext * I + daxn * n x n, where x is the tensor

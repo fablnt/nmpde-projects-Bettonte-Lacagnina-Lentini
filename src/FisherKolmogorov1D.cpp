@@ -259,7 +259,7 @@ FisherKolmogorov1D::solve()
     }
 }
 
-// todo
+
 void
 FisherKolmogorov1D::output(const unsigned int &time_step) const
 {

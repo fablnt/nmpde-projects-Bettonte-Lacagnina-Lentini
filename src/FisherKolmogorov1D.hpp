@@ -40,7 +40,6 @@ using namespace dealii;
 class FisherKolmogorov1D
 {
 public:
-  // Physical dimension (1D, 3D)
   static constexpr unsigned int dim = 1;
 
   class FunctionC0 : public Function<dim>

@@ -1,5 +1,19 @@
 #include "FisherKolmogorov.hpp"
 
+/**
+ * Function called by main() function.
+ * Creates the setup of the problem. 
+ * Takes the mesh as input, requesting an acceptable .msh file from deal.II;
+ * in case the mesh is built from scratch (as in our 2D case) it is necessary to follow
+ * the 'step-49 tutorial' in the reference documentation for deal.II (referring to its version 9.5.0).
+ * Initializes the finite element space choosing the 'Fe_SimplexP' in order to deal with 2D or 3D mesh
+ * with tetrahedral elements and chooses the Gauss-Legendre quadrature formula to compute the required integrals.
+ * Initializes the Dof Handler, to identify and interact with the degrees of freedom located in the mesh. 
+ * Initializes the grey and white matter region in order to set different parameters depending
+ * on the type of element considered.
+ * Computes the center of the domain, necessary to implement the axonal transport coefficient (parameter).
+ * Initializes the structure of the linear system, which is what the starting problem is reduced to.
+*/
 void
 FisherKolmogorov::setup()
 {
@@ -109,6 +123,17 @@ FisherKolmogorov::setup()
   }
 }
 
+/**
+ * Assembles the linear system associated to the tangent problem (Newton method).
+ * For all elements (cells) of the domain (mesh) does two operation: 
+ * setting of the specific parameters and calculation of their local contribution
+ * in terms of linear system to the final system that as to be solved.
+ * The setting of the parameters is done in relation to two aspects:
+ * type of diffusion (isotropic, circumferential, radial and axon-based fiber orientations)
+ * and the type of element (grey or white matter).
+ * When this process is finished, all active MPI processes combine their local system
+ * to obtain the final one to solve. 
+*/
 void
 FisherKolmogorov::assemble_system()
 {
@@ -250,6 +275,12 @@ FisherKolmogorov::assemble_system()
     }
 }
 
+/**
+ * Solves the linear system obtained in the assemble_system() function, 
+ * parallelizing the computation on the different active MPI processes. 
+ * Uses the GMRES method as iterative method, setting the maximum number of iterations equals to 1000,
+ * the tolerance equals to 1.e-6 and the Algebraic Multigrid as preconditioner.
+*/
 void
 FisherKolmogorov::solve_linear_system()
 {
@@ -271,6 +302,12 @@ FisherKolmogorov::solve_linear_system()
   pcout << "  " << solver_control.last_step() << " CG iterations" << std::endl;
 }
 
+/**
+ * Solves the non-linear problem using the Newton method.
+ * Invoked for each time step by the solve() function, finds a numerical solution
+ * of the non-linear system assembling and solving a linear system, using as maxinum number of iterations
+ * and as tolerance the same used for the GMRES solver.
+*/
 void
 FisherKolmogorov::solve_newton()
 {
@@ -280,8 +317,7 @@ FisherKolmogorov::solve_newton()
   unsigned int       n_iter             = 0;
   double             residual_norm      = residual_tolerance + 1;
 
-  // Apply the boundary conditions: in this case no need for dirichlet boundary
-  // conditions
+  // There are no dirichlet boundary conditions
 
 
   // iterative cycle till convergence
@@ -313,7 +349,11 @@ FisherKolmogorov::solve_newton()
     }
 }
 
-
+/**
+ * Function called by main() function.
+ * For each time step applies the Newton method (solving the tangent problem)
+ * and calls the output() function which creates output files.
+*/
 void
 FisherKolmogorov::solve()
 {
@@ -359,8 +399,12 @@ FisherKolmogorov::solve()
     }
 }
 
-
-// output function
+/**
+ * Output function.
+ * Creates the output data for the selected time step, in particular a VTU file for each MPI process,
+ * a PVTU file that points to VTU files and contains information about splitting data across multiple MPI processes.
+ * @param time_step   represents a distinct instant within the time interval T
+*/
 void
 FisherKolmogorov::output(const unsigned int &time_step) const
 {
