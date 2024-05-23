@@ -265,7 +265,7 @@ FisherKolmogorov1D::output(const unsigned int &time_step) const
 {
   std::cout << "===============================================" << std::endl;
   std::cout << "Time step:  " << time_step << std::endl;
-  
+
   // The DataOut class manages writing the results to a file.
   DataOut<dim> data_out;
 
@@ -280,7 +280,8 @@ FisherKolmogorov1D::output(const unsigned int &time_step) const
 
   // Then, use one of the many write_* methods to write the file in an
   // appropriate format.
-  const std::string output_file_name = "output-" + std::to_string(time_step) + ".vtk";
+  const std::string output_file_name =
+    "output-" + std::to_string(time_step) + ".vtk";
   std::ofstream output_file(output_file_name);
   data_out.write_vtk(output_file);
 
