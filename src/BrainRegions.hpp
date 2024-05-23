@@ -343,7 +343,7 @@ public:
   compute_axon_based_direction(const Point<dim> &p,
                                const Point<dim> &global_center)
   {
-    if (Axonal_region<3>::check_region(p))
+    if (Axonal_region<dim>::check_region(p))
       {
         return compute_circumferential_direction(p, global_center);
       }
@@ -393,14 +393,14 @@ public:
            (p[2] < 80 && p[2] > 50);
   }
 
-  /*
-    static Tensor<1, 3>
-    compute_radial_direction(const Point<3> &p, const Point<3> &global_center)
-    {
-      Tensor<1, 3> radial = p - global_center;
-      radial /= radial.norm();
-      return radial;
-    }*/
+
+  static Tensor<1, 3>
+  compute_radial_direction(const Point<3> &p, const Point<3> &global_center)
+  {
+    Tensor<1, 3> radial = p - global_center;
+    radial /= radial.norm();
+    return radial;
+  }
 
   static Tensor<1, 3>
   compute_circumferential_direction(const Point<3> &p,
@@ -440,7 +440,6 @@ public:
     azimuthal[2] =
       radial[0] * arbitrary_vector[1] - radial[1] * arbitrary_vector[0];
 
-    // Normalize the azimuthal vector
     azimuthal /= azimuthal.norm();
 
     Tensor<1, 3> circumferential;
@@ -451,35 +450,33 @@ public:
     return circumferential;
   }
 
-  /*
-    static Tensor<1, 3>
-    compute_axon_based_direction(const Point<3> &p, const Point<3>
-    &global_center)
-    {
-      if (Axonal_region<3>::check_region(p))
-        {
-          return compute_circumferential_direction(p, global_center);
-        }
-      else
-        return compute_radial_direction(p, global_center);
-    }*/
 
-  /*
+  static Tensor<1, 3>
+  compute_axon_based_direction(const Point<3> &p, const Point<3> &global_center)
+  {
+    if (Axonal_region<3>::check_region(p))
+      {
+        return compute_circumferential_direction(p, global_center);
+      }
+    else
+      return compute_radial_direction(p, global_center);
+  }
 
-static Tensor<1, 3>
-get_axonal_direction(const Point<3>    &p,
-                     const Point<3>    &global_center,
-                     const std::string &orientation)
-{
-  if (orientation == "radial")
-    return compute_radial_direction(p, global_center);
-  else if (orientation == "circumferential")
-    return compute_circumferential_direction(p, global_center);
-  else if (orientation == "axon-based")
-    return compute_axon_based_direction(p, global_center);
-  else
-    throw std::invalid_argument("Invalid orientation");
-}*/
+
+  static Tensor<1, 3>
+  get_axonal_direction(const Point<3>    &p,
+                       const Point<3>    &global_center,
+                       const std::string &orientation)
+  {
+    if (orientation == "radial")
+      return compute_radial_direction(p, global_center);
+    else if (orientation == "circumferential")
+      return compute_circumferential_direction(p, global_center);
+    else if (orientation == "axon-based")
+      return compute_axon_based_direction(p, global_center);
+    else
+      throw std::invalid_argument("Invalid orientation");
+  }
 };
 
 /**
@@ -498,15 +495,15 @@ public:
     return (p[0] * p[0]) / (a * a) + (p[1] * p[1]) / (b * b) < 1.0;
   }
 
-  /*
-    static Tensor<1, 2>
-    compute_radial_direction(const Point<2> &p, const Point<2> &global_center)
-    {
-      Tensor<1, 2> radial = p - global_center;
-      radial /= radial.norm();
-      return radial;
-    }
-    */
+
+  static Tensor<1, 2>
+  compute_radial_direction(const Point<2> &p, const Point<2> &global_center)
+  {
+    Tensor<1, 2> radial = p - global_center;
+    radial /= radial.norm();
+    return radial;
+  }
+
 
   static Tensor<1, 2>
   compute_circumferential_direction(const Point<2> &p,
@@ -529,34 +526,32 @@ public:
     return circumferential;
   }
 
-  /*
-    static Tensor<1, 2>
-    compute_axon_based_direction(const Point<2> &p, const Point<2>
-    &global_center)
-    {
-      if (Axonal_region<2>::check_region(p))
-        {
-          return compute_circumferential_direction(p, global_center);
-        }
-      else
-        return compute_radial_direction(p, global_center);
-    }
 
-    static Tensor<1, 2>
-    get_axonal_direction(const Point<2>    &p,
-                         const Point<2>    &global_center,
-                         const std::string &orientation)
-    {
-      if (orientation == "radial")
-        return compute_radial_direction(p, global_center);
-      else if (orientation == "circumferential")
+  static Tensor<1, 2>
+  compute_axon_based_direction(const Point<2> &p, const Point<2> &global_center)
+  {
+    if (Axonal_region<2>::check_region(p))
+      {
         return compute_circumferential_direction(p, global_center);
-      else if (orientation == "axon-based")
-        return compute_axon_based_direction(p, global_center);
-      else
-        throw std::invalid_argument("Invalid orientation");
-    }
-    */
+      }
+    else
+      return compute_radial_direction(p, global_center);
+  }
+
+  static Tensor<1, 2>
+  get_axonal_direction(const Point<2>    &p,
+                       const Point<2>    &global_center,
+                       const std::string &orientation)
+  {
+    if (orientation == "radial")
+      return compute_radial_direction(p, global_center);
+    else if (orientation == "circumferential")
+      return compute_circumferential_direction(p, global_center);
+    else if (orientation == "axon-based")
+      return compute_axon_based_direction(p, global_center);
+    else
+      throw std::invalid_argument("Invalid orientation");
+  }
 
 private:
   static constexpr double a = 30.0;

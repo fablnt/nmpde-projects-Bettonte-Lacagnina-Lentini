@@ -30,6 +30,7 @@
 // preconditioner)
 #include <deal.II/base/tensor.h>
 
+#include <deal.II/lac/solver_cg.h>
 #include <deal.II/lac/solver_gmres.h>
 #include <deal.II/lac/trilinos_precondition.h>
 #include <deal.II/lac/trilinos_sparse_matrix.h>
@@ -59,7 +60,7 @@ using namespace dealii;
 class FisherKolmogorov
 {
 public:
-  static constexpr unsigned int dim = 3;
+  static constexpr unsigned int dim = 2;
 
   /**
    * This class is used to define the spreading coefficient D.

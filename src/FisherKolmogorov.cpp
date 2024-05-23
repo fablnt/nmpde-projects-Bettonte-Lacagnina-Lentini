@@ -268,7 +268,8 @@ FisherKolmogorov::solve_linear_system()
 
   // solve with GMRES solver
   solver.solve(jacobian_matrix, delta_owned, residual_vector, preconditioner);
-  pcout << "  " << solver_control.last_step() << " CG iterations" << std::endl;
+  pcout << "  " << solver_control.last_step() << " GMRES iterations"
+        << std::endl;
 }
 
 void
