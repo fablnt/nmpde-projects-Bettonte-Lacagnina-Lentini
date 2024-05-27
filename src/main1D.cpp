@@ -8,7 +8,7 @@
 int
 main()
 {
-  const std::string  mesh_filename         = "../mesh1D.msh";
+  const std::string  mesh_filename         = "../mesh/mesh1D.msh";
   const unsigned int degree                = 1;
   const double       deltat                = 0.1;
   const double       T                     = 5;
