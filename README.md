@@ -28,8 +28,3 @@ $ cd mesh
 $ make
 ```
 
-to generate a mesh with a specific size of element, for example for the 2D Mesh
-```bash
-$ make MESH_SIZE_SCALE_2D=0.06
-```
-
