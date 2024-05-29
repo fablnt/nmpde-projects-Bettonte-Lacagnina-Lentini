@@ -21,3 +21,10 @@ The executable will be created into `build`, and can be executed through
 ```bash
 $ ./executable-name
 ```
+## Mesh Generation
+To generate the meshes, use the Makefile running the commands:
+```bash
+$ cd mesh
+$ make
+```
+
