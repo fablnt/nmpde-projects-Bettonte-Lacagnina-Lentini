@@ -2,6 +2,7 @@
 #define FISCHER_KOLMOGOROV_HPP
 
 #include <deal.II/base/function.h>
+#include <deal.II/base/symmetric_tensor.h>
 #include <deal.II/base/tensor.h>
 #include <deal.II/base/tensor_function.h>
 
@@ -60,46 +61,7 @@ using namespace dealii;
 class FisherKolmogorov
 {
 public:
-  static constexpr unsigned int dim = 3;
-
-  /**
-   * This class is used to define the spreading coefficient D.
-   */
-  class SpreadingCoefficient
-  {
-  public:
-    SpreadingCoefficient()
-    {}
-
-    /**
-     * Compute the spreading coefficient D as:
-     * \[
-     * D = d_{ext}} \cdot \mathbf{I} + d_{axn} \cdot \mathbf{n} \otimes
-     * \mathbf{n}
-     * \]
-     *
-     * @param dext isotropic diffusion coefficient
-     * @param daxn anisotropic diffusion coefficient
-     * @param direction fiber orientation
-     * @return Tensor<2, dim> the spreading coefficient D
-     */
-    Tensor<2, dim>
-    value(const double         &dext,
-          const double         &daxn,
-          const Tensor<1, dim> &direction) const
-    {
-      Tensor<2, dim> D;
-      D.clear();
-      for (unsigned int i = 0; i < dim; i++)
-        D[i][i] = dext;
-
-      Tensor<2, dim> S;
-      S.clear();
-      S = outer_product(direction, direction) * daxn;
-
-      return D + S;
-    }
-  };
+  static constexpr unsigned int dim = 2;
 
   /**
    * This class is used to define the isotropic diffusion coefficient dext for
