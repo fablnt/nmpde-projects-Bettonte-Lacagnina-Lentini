@@ -48,7 +48,7 @@ FisherKolmogorov::setup()
     pcout << "  DoFs per cell              = " << fe->dofs_per_cell
           << std::endl;
 
-    quadrature = std::make_unique<QGauss<dim>>(r + 1);
+    quadrature = std::make_unique<QGaussSimplex<dim>>(r + 1);
 
     pcout << "  Quadrature points per cell = " << quadrature->size()
           << std::endl;
@@ -265,17 +265,17 @@ FisherKolmogorov::assemble_system()
 
               // Forcing term equals to 0, no contribution to cell_residual(i)
             }
-
+        }
           cell->get_dof_indices(dof_indices);
 
           jacobian_matrix.add(dof_indices, cell_matrix);
           residual_vector.add(dof_indices, cell_residual);
-        }
+    }
 
       // Parallel communication among processes
       jacobian_matrix.compress(VectorOperation::add);
       residual_vector.compress(VectorOperation::add);
-    }
+    
 }
 
 /**
@@ -303,7 +303,7 @@ FisherKolmogorov::solve_linear_system()
 
   // solve with GMRES solver
   solver.solve(jacobian_matrix, delta_owned, residual_vector, preconditioner);
-  pcout << "  " << solver_control.last_step() << " CG iterations" << std::endl;
+  pcout << "  " << solver_control.last_step() << " GMRES iterations" << std::endl;
 }
 
 /**
