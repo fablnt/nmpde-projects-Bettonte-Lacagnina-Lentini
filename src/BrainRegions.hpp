@@ -559,4 +559,210 @@ private:
 };
 
 
+template <int dim>
+class RadialDirection : Function<dim>
+{
+public:
+  RadialDirection(const Point<dim> &global_center_)
+    : global_center(global_center_)
+  {}
+
+  virtual void
+  vector_value(const Point<dim> &p, Vector<double> &values) const override
+  {
+    Tensor<1, dim> radial = p - global_center;
+    radial /= radial.l2_norm();
+    values[0] = radial[0];
+    values[1] = radial[1];
+    if (dim == 3)
+      values[2] = radial[2];
+  }
+
+  virtual double
+  value(const Point<dim> &p, const unsigned int component = 0) const override
+  {
+    Tensor<1, dim> radial = p - global_center;
+    radial /= radial.l2_norm();
+    return radial[component];
+  }
+
+protected:
+  const Point<dim> global_center;
+};
+
+template <int dim>
+class CirtumferentialDirection : Function<dim>
+{
+public:
+  CirtumferentialDirection(const Point<dim> &global_center_)
+    : global_center(global_center_)
+  {}
+
+  virtual void
+  vector_value(const Point<dim> &p, Vector<double> &values) const override
+  {
+    Vector<double> radial = p - global_center;
+    if constexpr (dim == 2)
+      {
+        Vector<double> azimuthal;
+        azimuthal[0] = -p[1];
+        azimuthal[1] = p[0];
+        azimuthal /= azimuthal.l2_norm();
+
+        // Cross product between radial and azimuthal directions
+        values[0] = radial[1] * azimuthal[0] - radial[0] * azimuthal[1];
+        values[1] = radial[0] * azimuthal[0] + radial[1] * azimuthal[1];
+      }
+    else
+      {
+        Vector<double> arbitrary_vector;
+        if (std::abs(radial[0]) < std::abs(radial[1]) &&
+            std::abs(radial[0]) < std::abs(radial[2]))
+          {
+            arbitrary_vector[0] = 1.0;
+            arbitrary_vector[1] = 0.0;
+            arbitrary_vector[2] = 0.0;
+          }
+        else if (std::abs(radial[1]) < std::abs(radial[2]))
+          {
+            arbitrary_vector[0] = 0.0;
+            arbitrary_vector[1] = 1.0;
+            arbitrary_vector[2] = 0.0;
+          }
+        else
+          {
+            arbitrary_vector[0] = 0.0;
+            arbitrary_vector[1] = 0.0;
+            arbitrary_vector[2] = 1.0;
+          }
+
+        // Compute the azimuthal direction as the cross product of radial and
+        // arbitrary_vector
+        Vector<double> azimuthal;
+        azimuthal[0] =
+          radial[1] * arbitrary_vector[2] - radial[2] * arbitrary_vector[1];
+        azimuthal[1] =
+          radial[2] * arbitrary_vector[0] - radial[0] * arbitrary_vector[2];
+        azimuthal[2] =
+          radial[0] * arbitrary_vector[1] - radial[1] * arbitrary_vector[0];
+
+        azimuthal /= azimuthal.l2_norm();
+
+        values[0] = radial[1] * azimuthal[2] - radial[2] * azimuthal[1];
+        values[1] = radial[2] * azimuthal[0] - radial[0] * azimuthal[2];
+        values[2] = radial[0] * azimuthal[1] - radial[1] * azimuthal[0];
+      }
+  }
+
+  virtual double
+  value(const Point<dim> &p, const unsigned int component = 0) const override
+  {
+    Vector<double> radial = p - global_center;
+    Vector<double> circumferential;
+    if constexpr (dim == 2)
+      {
+        Vector<double> azimuthal;
+        azimuthal[0] = -p[1];
+        azimuthal[1] = p[0];
+        azimuthal /= azimuthal.l2_norm();
+
+        // Cross product between radial and azimuthal directions
+        circumferential[0] =
+          radial[1] * azimuthal[0] - radial[0] * azimuthal[1];
+        circumferential[1] =
+          radial[0] * azimuthal[0] + radial[1] * azimuthal[1];
+      }
+    else
+      {
+        Vector<double> arbitrary_vector;
+        if (std::abs(radial[0]) < std::abs(radial[1]) &&
+            std::abs(radial[0]) < std::abs(radial[2]))
+          {
+            arbitrary_vector[0] = 1.0;
+            arbitrary_vector[1] = 0.0;
+            arbitrary_vector[2] = 0.0;
+          }
+        else if (std::abs(radial[1]) < std::abs(radial[2]))
+          {
+            arbitrary_vector[0] = 0.0;
+            arbitrary_vector[1] = 1.0;
+            arbitrary_vector[2] = 0.0;
+          }
+        else
+          {
+            arbitrary_vector[0] = 0.0;
+            arbitrary_vector[1] = 0.0;
+            arbitrary_vector[2] = 1.0;
+          }
+
+        // Compute the azimuthal direction as the cross product of radial and
+        // arbitrary_vector
+        Vector<double> azimuthal;
+        azimuthal[0] =
+          radial[1] * arbitrary_vector[2] - radial[2] * arbitrary_vector[1];
+        azimuthal[1] =
+          radial[2] * arbitrary_vector[0] - radial[0] * arbitrary_vector[2];
+        azimuthal[2] =
+          radial[0] * arbitrary_vector[1] - radial[1] * arbitrary_vector[0];
+
+        circumferential[0] =
+          radial[1] * azimuthal[2] - radial[2] * azimuthal[1];
+        circumferential[1] =
+          radial[2] * azimuthal[0] - radial[0] * azimuthal[2];
+        circumferential[2] =
+          radial[0] * azimuthal[1] - radial[1] * azimuthal[0];
+      }
+    return circumferential[component];
+  }
+
+protected:
+  const Point<dim> global_center;
+};
+
+
+/*
+class AxonBasedDirection : Function<dim>
+{
+public:
+  AxonBasedDirection(const Point<dim>  &global_center_,
+                     const std::string &orientation_)
+    : global_center(global_center_)
+    , orientation(orientation_)
+  {}
+
+  virtual void
+  vector_value(const Point<dim> &p, Vector<double> &values) const override
+  {
+    if (Axonal_region<dim>::check_region(p))
+      {
+        CirtumferentialDirection<dim> circumferential(global_center);
+        circumferential.vector_value(p, values);
+      }
+    else
+      {
+        RadialDirection<dim> radial(global_center);
+        radial.vector_value(p, values);
+      }
+  }
+
+  virtual double
+  value(const Point<dim> &p, const unsigned int component = 0) const override
+  {
+    if (Axonal_region<dim>::check_region(p))
+      {
+        CirtumferentialDirection<dim> circumferential(global_center);
+        return circumferential.value(p, component);
+      }
+    else
+      {
+        RadialDirection<dim> radial(global_center);
+        return radial.value(p, component);
+      }
+  }
+
+protected:
+  const Point<dim>  global_center;
+  const std::string orientation;
+};
+*/
 #endif
