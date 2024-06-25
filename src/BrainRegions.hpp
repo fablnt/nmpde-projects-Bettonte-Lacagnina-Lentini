@@ -336,7 +336,7 @@ public:
     for (unsigned int i = 0; i < dim; ++i)
       radial[i] = p[i] - global_center[i];
     radial /= radial.l2_norm();
-    Vector<double> azimuthal;
+    Vector<double> azimuthal(dim);
     if constexpr (dim == 2)
       {
         azimuthal[0] = -p[1];
@@ -349,7 +349,7 @@ public:
       }
     else
       {
-        Vector<double> arbitrary_vector;
+        Vector<double> arbitrary_vector(dim);
         if (std::abs(radial[0]) < std::abs(radial[1]) &&
             std::abs(radial[0]) < std::abs(radial[2]))
           {
@@ -394,8 +394,8 @@ public:
     for (unsigned int i = 0; i < dim; ++i)
       radial[i] = p[i] - global_center[i];
     radial /= radial.l2_norm();
-    Vector<double> circumferential;
-    Vector<double> azimuthal;
+    Vector<double> circumferential(dim);
+    Vector<double> azimuthal(dim);
     if constexpr (dim == 2)
       {
         azimuthal[0] = -p[1];
@@ -410,7 +410,7 @@ public:
       }
     else
       {
-        Vector<double> arbitrary_vector;
+        Vector<double> arbitrary_vector(dim);
         if (std::abs(radial[0]) < std::abs(radial[1]) &&
             std::abs(radial[0]) < std::abs(radial[2]))
           {
