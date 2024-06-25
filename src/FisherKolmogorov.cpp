@@ -99,6 +99,9 @@ FisherKolmogorov::setup()
     global_center /= mesh.n_global_active_cells();
 
     std::cout << "Center of the domain = " << global_center << std::endl;
+
+
+    direction = get_direction<dim>(orientation, global_center);
   }
 
   // Initialize the linear system.
@@ -165,6 +168,8 @@ FisherKolmogorov::assemble_system()
 
   double         growth_coefficient_loc;
   Tensor<2, dim> spreading_coefficient_loc;
+  Tensor<1, dim> n_loc;
+  Point<dim>     cell_center;
 
   for (const auto &cell : dof_handler.active_cell_iterators())
     {
@@ -180,28 +185,29 @@ FisherKolmogorov::assemble_system()
       fe_values.get_function_gradients(solution, solution_gradient_loc);
       fe_values.get_function_values(solution_old, solution_old_loc);
 
-      Tensor<1, dim> direction;
-      direction.clear();
-      Point<dim> cell_center = cell->center();
-
-      direction = Axonal_region<dim>::get_axonal_direction(cell_center,
-                                                           global_center,
-                                                           orientation);
-
+      cell_center = cell->center();
 
       for (unsigned int q = 0; q < n_q; ++q)
         {
+          Vector<double> n_loc(dim);
+          direction->vector_value(fe_values.quadrature_point(q), n_loc);
+
+          Tensor<1, dim> n_loc_tensor;
+          for (unsigned int i = 0; i < dim; ++i)
+            n_loc_tensor[i] = n_loc[i];
+
           if (cell->material_id() == 1)
             {
               growth_coefficient_loc =
                 growth_coefficient_grey.value(fe_values.quadrature_point(q));
 
-              spreading_coefficient_loc = isotropic_coefficient_grey.value(
-                                            fe_values.quadrature_point(q)) *
-                                            unit_symmetric_tensor<dim>() +
-                                          anisotropic_coefficient_grey.value(
-                                            fe_values.quadrature_point(q)) *
-                                            outer_product(direction, direction);
+              spreading_coefficient_loc =
+                isotropic_coefficient_grey.value(
+                  fe_values.quadrature_point(q)) *
+                  unit_symmetric_tensor<dim>() +
+                anisotropic_coefficient_grey.value(
+                  fe_values.quadrature_point(q)) *
+                  outer_product(n_loc_tensor, n_loc_tensor);
             }
 
           else
@@ -209,12 +215,13 @@ FisherKolmogorov::assemble_system()
               growth_coefficient_loc =
                 growth_coefficient_white.value(fe_values.quadrature_point(q));
 
-              spreading_coefficient_loc = isotropic_coefficient_white.value(
-                                            fe_values.quadrature_point(q)) *
-                                            unit_symmetric_tensor<dim>() +
-                                          anisotropic_coefficient_white.value(
-                                            fe_values.quadrature_point(q)) *
-                                            outer_product(direction, direction);
+              spreading_coefficient_loc =
+                isotropic_coefficient_white.value(
+                  fe_values.quadrature_point(q)) *
+                  unit_symmetric_tensor<dim>() +
+                anisotropic_coefficient_white.value(
+                  fe_values.quadrature_point(q)) *
+                  outer_product(n_loc_tensor, n_loc_tensor);
             }
 
           for (unsigned int i = 0; i < dofs_per_cell; ++i)

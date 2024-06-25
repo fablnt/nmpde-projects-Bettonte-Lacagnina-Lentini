@@ -61,7 +61,7 @@ using namespace dealii;
 class FisherKolmogorov
 {
 public:
-  static constexpr unsigned int dim = 2;
+  static constexpr unsigned int dim = 3;
 
   /**
    * This class is used to define the isotropic diffusion coefficient dext for
@@ -243,7 +243,7 @@ protected:
 
   GrowthCoefficientGrey growth_coefficient_grey;
 
-  SpreadingCoefficient spreading_coefficient;
+  // SpreadingCoefficient spreading_coefficient;
 
   IsotropicDiffusionCoefficientWhite isotropic_coefficient_white;
 
@@ -269,6 +269,8 @@ protected:
   const double deltat;
 
   Point<dim> global_center;
+
+  std::unique_ptr<Function<dim>> direction;
 
   // Triangulation. The parallel::fullydistributed::Triangulation class manages
   // a triangulation that is completely distributed (i.e. each process only
