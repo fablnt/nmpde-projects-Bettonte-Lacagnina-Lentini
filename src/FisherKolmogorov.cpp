@@ -70,15 +70,15 @@ FisherKolmogorov::setup()
   // Initialize grey and white matter regions
   {
     pcout << "Initializing the white and grey matter regions" << std::endl;
+    grey_matter = Grey_matter<dim>();
+
     for (const auto &cell : dof_handler.active_cell_iterators())
       {
         if (!cell->is_locally_owned())
           continue;
 
-        if (Grey_matter<dim>::check_region(cell->center()))
-          {
-            cell->set_material_id(1);
-          }
+        if (grey_matter.check_grey_matter(cell->center()))
+          cell->set_material_id(1);
       }
   }
 
@@ -98,8 +98,13 @@ FisherKolmogorov::setup()
 
     global_center /= mesh.n_global_active_cells();
 
-    std::cout << "Center of the domain = " << global_center << std::endl;
+    pcout << "Center of the domain = " << global_center << std::endl;
   }
+
+  // Initialize the fiber orientation.
+  pcout << "Initializing the fiber orientation" << std::endl;
+  pcout << "  Orientation = " << orientation << std::endl;
+  direction = get_direction<dim>(orientation, global_center);
 
   // Initialize the linear system.
   {
@@ -165,6 +170,7 @@ FisherKolmogorov::assemble_system()
 
   double         growth_coefficient_loc;
   Tensor<2, dim> spreading_coefficient_loc;
+  Point<dim>     cell_center;
 
   for (const auto &cell : dof_handler.active_cell_iterators())
     {
@@ -180,27 +186,29 @@ FisherKolmogorov::assemble_system()
       fe_values.get_function_gradients(solution, solution_gradient_loc);
       fe_values.get_function_values(solution_old, solution_old_loc);
 
-      Tensor<1, dim> direction;
-      direction.clear();
-      Point<dim> cell_center = cell->center();
-
-      direction = Axonal_region<dim>::get_axonal_direction(cell_center,
-                                                           global_center,
-                                                           orientation);
+      cell_center = cell->center();
 
       for (unsigned int q = 0; q < n_q; ++q)
         {
+          Vector<double> n_loc(dim);
+          direction->vector_value(fe_values.quadrature_point(q), n_loc);
+
+          Tensor<1, dim> n_loc_tensor;
+          for (unsigned int i = 0; i < dim; ++i)
+            n_loc_tensor[i] = n_loc[i];
+
           if (cell->material_id() == 1)
             {
               growth_coefficient_loc =
                 growth_coefficient_grey.value(fe_values.quadrature_point(q));
 
               spreading_coefficient_loc =
-                spreading_coefficient.value(isotropic_coefficient_grey.value(
-                                              fe_values.quadrature_point(q)),
-                                            anisotropic_coefficient_grey.value(
-                                              fe_values.quadrature_point(q)),
-                                            direction);
+                isotropic_coefficient_grey.value(
+                  fe_values.quadrature_point(q)) *
+                  unit_symmetric_tensor<dim>() +
+                anisotropic_coefficient_grey.value(
+                  fe_values.quadrature_point(q)) *
+                  outer_product(n_loc_tensor, n_loc_tensor);
             }
 
           else
@@ -209,11 +217,12 @@ FisherKolmogorov::assemble_system()
                 growth_coefficient_white.value(fe_values.quadrature_point(q));
 
               spreading_coefficient_loc =
-                spreading_coefficient.value(isotropic_coefficient_white.value(
-                                              fe_values.quadrature_point(q)),
-                                            anisotropic_coefficient_white.value(
-                                              fe_values.quadrature_point(q)),
-                                            direction);
+                isotropic_coefficient_white.value(
+                  fe_values.quadrature_point(q)) *
+                  unit_symmetric_tensor<dim>() +
+                anisotropic_coefficient_white.value(
+                  fe_values.quadrature_point(q)) *
+                  outer_product(n_loc_tensor, n_loc_tensor);
             }
 
           for (unsigned int i = 0; i < dofs_per_cell; ++i)
@@ -263,9 +272,21 @@ FisherKolmogorov::assemble_system()
                                   fe_values.JxW(q);
 
 
-              // Forcing term equals to 0, no contribution to cell_residual(i)
+              // Forcing term equals to 0, no contribution to
+              // cell_residual(i)
             }
         }
+<<<<<<< experimental/alternative-version
+
+      cell->get_dof_indices(dof_indices);
+
+      jacobian_matrix.add(dof_indices, cell_matrix);
+      residual_vector.add(dof_indices, cell_residual);
+    }
+  // Parallel communication among processes
+  jacobian_matrix.compress(VectorOperation::add);
+  residual_vector.compress(VectorOperation::add);
+=======
           cell->get_dof_indices(dof_indices);
 
           jacobian_matrix.add(dof_indices, cell_matrix);
@@ -276,6 +297,7 @@ FisherKolmogorov::assemble_system()
       jacobian_matrix.compress(VectorOperation::add);
       residual_vector.compress(VectorOperation::add);
     
+>>>>>>> main
 }
 
 /**
@@ -290,8 +312,9 @@ FisherKolmogorov::solve_linear_system()
 {
   // setting for solver
   SolverControl solver_control(
-    1000, 1e-6 * residual_vector.l2_norm()); // residual norm taken into account
-                                             // for a more reliable tolerance
+    1000,
+    1e-6 * residual_vector.l2_norm()); // residual norm taken into account
+                                       // for a more reliable tolerance
 
   // GMRES solver
   SolverGMRES<TrilinosWrappers::MPI::Vector> solver(solver_control);
@@ -303,15 +326,20 @@ FisherKolmogorov::solve_linear_system()
 
   // solve with GMRES solver
   solver.solve(jacobian_matrix, delta_owned, residual_vector, preconditioner);
+<<<<<<< experimental/alternative-version
+  pcout << "  " << solver_control.last_step() << " GMRES iterations"
+        << std::endl;
+=======
   pcout << "  " << solver_control.last_step() << " GMRES iterations" << std::endl;
+>>>>>>> main
 }
 
 /**
  * Solves the non-linear problem using the Newton method.
  * Invoked for each time step by the solve() function, finds a numerical
  * solution of the non-linear system assembling and solving a linear system,
- * using as maxinum number of iterations and as tolerance the same used for the
- * GMRES solver.
+ * using as maxinum number of iterations and as tolerance the same used for
+ * the GMRES solver.
  */
 void
 FisherKolmogorov::solve_newton()
@@ -380,11 +408,8 @@ FisherKolmogorov::solve()
 
   unsigned int time_step = 0;
 
-  while (
-    time <
-    T -
-      0.5 *
-        deltat) // - 0.5*deltat is a tolerance setted to avoid extra-iterations
+  while (time < T - 0.5 * deltat) // - 0.5*deltat is a tolerance setted to
+                                  // avoid extra-iterations
     {
       time += deltat;
       ++time_step;
@@ -406,9 +431,9 @@ FisherKolmogorov::solve()
 
 /**
  * Output function.
- * Creates the output data for the selected time step, in particular a VTU file
- * for each MPI process, a PVTU file that points to VTU files and contains
- * information about splitting data across multiple MPI processes.
+ * Creates the output data for the selected time step, in particular a VTU
+ * file for each MPI process, a PVTU file that points to VTU files and
+ * contains information about splitting data across multiple MPI processes.
  * @param time_step   represents a distinct instant within the time interval T
  */
 void

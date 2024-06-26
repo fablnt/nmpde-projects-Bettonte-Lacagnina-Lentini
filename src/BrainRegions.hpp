@@ -231,8 +231,8 @@ public:
    * @param p Point to check.
    * @return True if the point is inside the grey matter region, false otherwise.
    */
-  static bool
-  check_region(const Point<dim> &p)
+  bool
+  check_grey_matter(const Point<dim> &p)
   {
     return false;
   }
@@ -248,8 +248,8 @@ public:
   Grey_matter()
   {}
 
-  static bool
-  check_region(const Point<3> &p)
+  bool
+  check_grey_matter(const Point<3> &p)
   {
     return ((p[0] < 33 || p[0] > 70) || (p[1] < 25 || p[1] > 120) ||
             (p[2] > 85));
@@ -266,297 +266,258 @@ public:
   Grey_matter()
   {}
 
-  static bool
-  check_region(const Point<2> &p)
+  bool
+  check_grey_matter(const Point<2> &p)
   {
     return (p[0] * p[0]) / (a * a) + (p[1] * p[1]) / (b * b) > 1.0;
   }
 
 private:
-  // semi-axes length of the ellipse representing the grey matter region.
+  // semi-axes length of the ellipse representing the grey matter region in 2D.
   static constexpr double a = 60.0;
   static constexpr double b = 40.0;
 };
 
-/**
- * Class to define the brain region where fibers are oriented in the
- * circumferential direction.
- *
- * @tparam dim Dimension of the problem.
- */
 template <int dim>
-class Axonal_region
+class RadialDirection : public Function<dim>
 {
 public:
-  Axonal_region()
+  RadialDirection(const Point<dim> &global_center_)
+    : global_center(global_center_)
   {}
 
-  /**
-   * Check if a point is inside the axonal region.
-   *
-   * @param p Point to check.
-   * @return True if the point is inside the axonal region, false otherwise.
-   */
-  static bool
-  check_region(const Point<dim> &p)
+  virtual void
+  vector_value(const Point<dim> &p, Vector<double> &values) const override
   {
-    return false;
+    Vector<double> radial(dim);
+    for (unsigned int i = 0; i < dim; ++i)
+      radial[i] = p[i] - global_center[i];
+    radial /= radial.l2_norm();
+
+    values[0] = radial[0];
+    values[1] = radial[1];
+    if (dim == 3)
+      values[2] = radial[2];
   }
 
-  /**
-   * Compute the radial direction at a given point.
-   *
-   * @param p Point at which to compute the radial direction.
-   * @param global_center Global center of the brain.
-   * @return Tensor<1, dim> representing the radial direction at the given point.
-   */
-  static Tensor<1, dim>
-  compute_radial_direction(const Point<dim> &p, const Point<dim> &global_center)
+  virtual double
+  value(const Point<dim> &p, const unsigned int component = 0) const override
   {
-    return Tensor<1, dim>();
+    Vector<double> radial(dim);
+    for (unsigned int i = 0; i < dim; ++i)
+      radial[i] = p[i] - global_center[i];
+    radial /= radial.l2_norm();
+
+    return radial[component];
   }
 
-  /**
-   * Compute the circumferential direction at a given point.
-   *
-   * @param p Point at which to compute the circumferential direction.
-   * @param global_center Global center of the brain.
-   * @return Tensor<1, dim> representing the circumferential direction at the given point.
-   */
-  static Tensor<1, dim>
-  compute_circumferential_direction(const Point<dim> &p,
-                                    const Point<dim> &global_center)
-  {
-    return Tensor<1, dim>();
-  }
-
-  /**
-   * Compute the axon-based direction at a given point.
-   * The axon-based direction is the circumferential direction if the point is
-   * inside the axonal region, and the radial direction otherwise.
-   *
-   * @param p Point at which to compute the axon-based direction.
-   * @param global_center Global center of the brain.
-   * @return Tensor<1, dim> representing the axon-based direction at the given point.
-   */
-  static Tensor<1, dim>
-  compute_axon_based_direction(const Point<dim> &p,
-                               const Point<dim> &global_center)
-  {
-    if (Axonal_region<dim>::check_region(p))
-      {
-        return compute_circumferential_direction(p, global_center);
-      }
-    else
-      return compute_radial_direction(p, global_center);
-  }
-
-  /**
-   * Get the axonal direction at a given point.
-   * The axonal direction can be either radial, circumferential, or axon-based.
-   *
-   * @param p Point at which to compute the axonal direction.
-   * @param global_center Global center of the brain.
-   * @param orientation Orientation of the axonal direction.
-   * @return Tensor<1, dim> representing the axonal direction at the given point.
-   */
-  static Tensor<1, dim>
-  get_axonal_direction(const Point<dim>  &p,
-                       const Point<dim>  &global_center,
-                       const std::string &orientation)
-  {
-    if (orientation == "radial")
-      return compute_radial_direction(p, global_center);
-    else if (orientation == "circumferential")
-      return compute_circumferential_direction(p, global_center);
-    else if (orientation == "axon-based")
-      return compute_axon_based_direction(p, global_center);
-    else
-      throw std::invalid_argument("Invalid orientation");
-  }
+protected:
+  const Point<dim> global_center;
 };
 
-/**
- * Specialization of the Axonal_region class for 3D problems.
- */
-template <>
-class Axonal_region<3>
+template <int dim>
+class CircumferentialDirection : public Function<dim>
 {
 public:
-  Axonal_region()
+  CircumferentialDirection(const Point<dim> &global_center_)
+    : global_center(global_center_)
   {}
 
-  static bool
-  check_region(const Point<3> &p)
+  virtual void
+  vector_value(const Point<dim> &p, Vector<double> &values) const override
   {
-    return (p[0] < 60 && p[0] > 40) && (p[1] < 110 && p[1] > 34) &&
-           (p[2] < 80 && p[2] > 50);
-  }
-
-
-  static Tensor<1, 3>
-  compute_radial_direction(const Point<3> &p, const Point<3> &global_center)
-  {
-    Tensor<1, 3> radial = p - global_center;
-    radial /= radial.norm();
-    return radial;
-  }
-
-  static Tensor<1, 3>
-  compute_circumferential_direction(const Point<3> &p,
-                                    const Point<3> &global_center)
-  {
-    Tensor<1, 3> radial =
-      Axonal_region<3>::compute_radial_direction(p, global_center);
-
-    Tensor<1, 3> arbitrary_vector;
-    if (std::abs(radial[0]) < std::abs(radial[1]) &&
-        std::abs(radial[0]) < std::abs(radial[2]))
+    Vector<double> radial(dim);
+    for (unsigned int i = 0; i < dim; ++i)
+      radial[i] = p[i] - global_center[i];
+    radial /= radial.l2_norm();
+    Vector<double> azimuthal(dim);
+    if constexpr (dim == 2)
       {
-        arbitrary_vector[0] = 1.0;
-        arbitrary_vector[1] = 0.0;
-        arbitrary_vector[2] = 0.0;
-      }
-    else if (std::abs(radial[1]) < std::abs(radial[2]))
-      {
-        arbitrary_vector[0] = 0.0;
-        arbitrary_vector[1] = 1.0;
-        arbitrary_vector[2] = 0.0;
+        azimuthal[0] = -p[1];
+        azimuthal[1] = p[0];
+        azimuthal /= azimuthal.l2_norm();
+
+        // Cross product between radial and azimuthal directions
+        values[0] = radial[1] * azimuthal[0] - radial[0] * azimuthal[1];
+        values[1] = radial[0] * azimuthal[0] + radial[1] * azimuthal[1];
       }
     else
       {
-        arbitrary_vector[0] = 0.0;
-        arbitrary_vector[1] = 0.0;
-        arbitrary_vector[2] = 1.0;
+        Vector<double> arbitrary_vector(dim);
+        if (std::abs(radial[0]) < std::abs(radial[1]) &&
+            std::abs(radial[0]) < std::abs(radial[2]))
+          {
+            arbitrary_vector[0] = 1.0;
+            arbitrary_vector[1] = 0.0;
+            arbitrary_vector[2] = 0.0;
+          }
+        else if (std::abs(radial[1]) < std::abs(radial[2]))
+          {
+            arbitrary_vector[0] = 0.0;
+            arbitrary_vector[1] = 1.0;
+            arbitrary_vector[2] = 0.0;
+          }
+        else
+          {
+            arbitrary_vector[0] = 0.0;
+            arbitrary_vector[1] = 0.0;
+            arbitrary_vector[2] = 1.0;
+          }
+
+        // Compute the azimuthal direction as the cross product of radial and
+        // arbitrary_vector
+        azimuthal[0] =
+          radial[1] * arbitrary_vector[2] - radial[2] * arbitrary_vector[1];
+        azimuthal[1] =
+          radial[2] * arbitrary_vector[0] - radial[0] * arbitrary_vector[2];
+        azimuthal[2] =
+          radial[0] * arbitrary_vector[1] - radial[1] * arbitrary_vector[0];
+
+        azimuthal /= azimuthal.l2_norm();
+
+        values[0] = radial[1] * azimuthal[2] - radial[2] * azimuthal[1];
+        values[1] = radial[2] * azimuthal[0] - radial[0] * azimuthal[2];
+        values[2] = radial[0] * azimuthal[1] - radial[1] * azimuthal[0];
       }
-
-    // Compute the azimuthal direction as the cross product of radial and
-    // arbitrary_vector
-    Tensor<1, 3> azimuthal;
-    azimuthal[0] =
-      radial[1] * arbitrary_vector[2] - radial[2] * arbitrary_vector[1];
-    azimuthal[1] =
-      radial[2] * arbitrary_vector[0] - radial[0] * arbitrary_vector[2];
-    azimuthal[2] =
-      radial[0] * arbitrary_vector[1] - radial[1] * arbitrary_vector[0];
-
-    azimuthal /= azimuthal.norm();
-
-    Tensor<1, 3> circumferential;
-    circumferential[0] = radial[1] * azimuthal[2] - radial[2] * azimuthal[1];
-    circumferential[1] = radial[2] * azimuthal[0] - radial[0] * azimuthal[2];
-    circumferential[2] = radial[0] * azimuthal[1] - radial[1] * azimuthal[0];
-
-    return circumferential;
   }
 
-
-  static Tensor<1, 3>
-  compute_axon_based_direction(const Point<3> &p, const Point<3> &global_center)
+  virtual double
+  value(const Point<dim> &p, const unsigned int component = 0) const override
   {
-    if (Axonal_region<3>::check_region(p))
+    Vector<double> radial(dim);
+    for (unsigned int i = 0; i < dim; ++i)
+      radial[i] = p[i] - global_center[i];
+    radial /= radial.l2_norm();
+    Vector<double> circumferential(dim);
+    Vector<double> azimuthal(dim);
+    if constexpr (dim == 2)
       {
-        return compute_circumferential_direction(p, global_center);
+        azimuthal[0] = -p[1];
+        azimuthal[1] = p[0];
+        azimuthal /= azimuthal.l2_norm();
+
+        // Cross product between radial and azimuthal directions
+        circumferential[0] =
+          radial[1] * azimuthal[0] - radial[0] * azimuthal[1];
+        circumferential[1] =
+          radial[0] * azimuthal[0] + radial[1] * azimuthal[1];
       }
     else
-      return compute_radial_direction(p, global_center);
+      {
+        Vector<double> arbitrary_vector(dim);
+        if (std::abs(radial[0]) < std::abs(radial[1]) &&
+            std::abs(radial[0]) < std::abs(radial[2]))
+          {
+            arbitrary_vector[0] = 1.0;
+            arbitrary_vector[1] = 0.0;
+            arbitrary_vector[2] = 0.0;
+          }
+        else if (std::abs(radial[1]) < std::abs(radial[2]))
+          {
+            arbitrary_vector[0] = 0.0;
+            arbitrary_vector[1] = 1.0;
+            arbitrary_vector[2] = 0.0;
+          }
+        else
+          {
+            arbitrary_vector[0] = 0.0;
+            arbitrary_vector[1] = 0.0;
+            arbitrary_vector[2] = 1.0;
+          }
+
+        // Compute the azimuthal direction as the cross product of radial and
+        // arbitrary_vector
+        Vector<double> azimuthal;
+        azimuthal[0] =
+          radial[1] * arbitrary_vector[2] - radial[2] * arbitrary_vector[1];
+        azimuthal[1] =
+          radial[2] * arbitrary_vector[0] - radial[0] * arbitrary_vector[2];
+        azimuthal[2] =
+          radial[0] * arbitrary_vector[1] - radial[1] * arbitrary_vector[0];
+
+        azimuthal /= azimuthal.l2_norm();
+
+        circumferential[0] =
+          radial[1] * azimuthal[2] - radial[2] * azimuthal[1];
+        circumferential[1] =
+          radial[2] * azimuthal[0] - radial[0] * azimuthal[2];
+        circumferential[2] =
+          radial[0] * azimuthal[1] - radial[1] * azimuthal[0];
+      }
+    return circumferential[component];
   }
 
-
-  static Tensor<1, 3>
-  get_axonal_direction(const Point<3>    &p,
-                       const Point<3>    &global_center,
-                       const std::string &orientation)
-  {
-    if (orientation == "radial")
-      return compute_radial_direction(p, global_center);
-    else if (orientation == "circumferential")
-      return compute_circumferential_direction(p, global_center);
-    else if (orientation == "axon-based")
-      return compute_axon_based_direction(p, global_center);
-    else
-      throw std::invalid_argument("Invalid orientation");
-  }
+protected:
+  const Point<dim> global_center;
 };
 
-/**
- * Specialization of the Axonal_region class for 2D problems.
- */
-template <>
-class Axonal_region<2>
+template <int dim>
+class AxonBasedDirection : public Function<dim>
 {
 public:
-  Axonal_region()
+  AxonBasedDirection(const Point<dim> &global_center_)
+    : global_center(global_center_)
+    , circumferential(global_center_)
+    , radial(global_center_)
   {}
 
-  static bool
-  check_region(const Point<2> &p)
+  virtual void
+  vector_value(const Point<dim> &p, Vector<double> &values) const override
   {
-    return (p[0] * p[0]) / (a * a) + (p[1] * p[1]) / (b * b) < 1.0;
+    if (check_axonal_region(p))
+      circumferential.vector_value(p, values);
+    else
+      radial.vector_value(p, values);
   }
 
-
-  static Tensor<1, 2>
-  compute_radial_direction(const Point<2> &p, const Point<2> &global_center)
+  virtual double
+  value(const Point<dim> &p, const unsigned int component = 0) const override
   {
-    Tensor<1, 2> radial = p - global_center;
-    radial /= radial.norm();
-    return radial;
+    if (check_axonal_region(p))
+      return circumferential.value(p, component);
+    else
+      return radial.value(p, component);
   }
 
-
-  static Tensor<1, 2>
-  compute_circumferential_direction(const Point<2> &p,
-                                    const Point<2> &global_center)
+  bool
+  check_axonal_region(const Point<dim> &p) const
   {
-    Tensor<1, 2> radial =
-      Axonal_region<2>::compute_radial_direction(p, global_center);
-
-    // Azimuthal direction perpendicular to the radial direction
-    Tensor<1, 2> azimuthal;
-    azimuthal[0] = -p[1];
-    azimuthal[1] = p[0];
-    azimuthal /= azimuthal.norm();
-
-    // Cross product between radial and azimuthal directions
-    Tensor<1, 2> circumferential;
-    circumferential[0] = radial[1] * azimuthal[0] - radial[0] * azimuthal[1];
-    circumferential[1] = radial[0] * azimuthal[0] + radial[1] * azimuthal[1];
-
-    return circumferential;
-  }
-
-
-  static Tensor<1, 2>
-  compute_axon_based_direction(const Point<2> &p, const Point<2> &global_center)
-  {
-    if (Axonal_region<2>::check_region(p))
+    if constexpr (dim == 3)
       {
-        return compute_circumferential_direction(p, global_center);
+        return (p[0] < 60 && p[0] > 40) && (p[1] < 110 && p[1] > 34) &&
+               (p[2] < 80 && p[2] > 50);
+      }
+    else if constexpr (dim == 2)
+      {
+        double a = 30.0;
+        double b = 20.0;
+        return (p[0] * p[0]) / (a * a) + (p[1] * p[1]) / (b * b) < 1.0;
       }
     else
-      return compute_radial_direction(p, global_center);
+      {
+        static_assert(dim == 2 || dim == 3, "Unsupported dimension");
+        return false; // Should not reach here
+      }
   }
 
-  static Tensor<1, 2>
-  get_axonal_direction(const Point<2>    &p,
-                       const Point<2>    &global_center,
-                       const std::string &orientation)
-  {
-    if (orientation == "radial")
-      return compute_radial_direction(p, global_center);
-    else if (orientation == "circumferential")
-      return compute_circumferential_direction(p, global_center);
-    else if (orientation == "axon-based")
-      return compute_axon_based_direction(p, global_center);
-    else
-      throw std::invalid_argument("Invalid orientation");
-  }
-
-private:
-  static constexpr double a = 30.0;
-  static constexpr double b = 20.0;
+protected:
+  const Point<dim>              global_center;
+  CircumferentialDirection<dim> circumferential;
+  RadialDirection<dim>          radial;
 };
 
+template <int dim>
+std::unique_ptr<Function<dim>>
+get_direction(std::string orientation, const Point<dim> &global_center)
+{
+  if (orientation == "radial")
+    return std::make_unique<RadialDirection<dim>>(global_center);
+  else if (orientation == "circumferential")
+    return std::make_unique<CircumferentialDirection<dim>>(global_center);
+  else if (orientation == "axon-based")
+    return std::make_unique<AxonBasedDirection<dim>>(global_center);
+  else
+    throw std::invalid_argument("Invalid orientation");
+}
 
 #endif
