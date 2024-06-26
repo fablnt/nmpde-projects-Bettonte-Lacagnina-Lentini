@@ -6,7 +6,7 @@
 
 using namespace dealii;
 /**
- * Base class for seeding regions in the brain.
+ * Base class for initial seeding regions in the brain.
  *
  * @tparam dim Dimension of the problem.
  */
@@ -197,7 +197,7 @@ public:
  *
  * @param region Name of the seeding region.
  * @return Unique pointer to the seeding region.
- * @throw std::invalid_argument if the seeding region is invalid.
+ * @throw std::invalid_argument if the seeding region name is invalid.
  */
 template <int dim>
 std::unique_ptr<SeedingRegion<dim>>
@@ -278,6 +278,12 @@ private:
   static constexpr double b = 40.0;
 };
 
+
+/**
+ * Class to define the Radial direction of the fibers in the brain.
+ *
+ * @tparam dim Dimension of the problem.
+ */
 template <int dim>
 class RadialDirection : public Function<dim>
 {
@@ -314,7 +320,11 @@ public:
 protected:
   const Point<dim> global_center;
 };
-
+/**
+ * Class to define the Circumferential direction of the fibers in the brain.
+ *
+ * @tparam dim Dimension of the problem.
+ */
 template <int dim>
 class CircumferentialDirection : public Function<dim>
 {
@@ -451,6 +461,13 @@ protected:
   const Point<dim> global_center;
 };
 
+/**
+ * Class to define the direction of the fibers in the brain following those of
+ * the axons. Based on the locations of the points, the direction is either
+ * radial or circumferential.
+ *
+ * @tparam dim Dimension of the problem.
+ */
 template <int dim>
 class AxonBasedDirection : public Function<dim>
 {
@@ -479,6 +496,16 @@ public:
       return radial.value(p, component);
   }
 
+  /**
+   * Check in which region the point is located. If the points is in the region
+   * where the axonal fiber orientation is circumferential, return true.
+   * Otherwise, the point is in the region where the axonal fiber orientation is
+   * radial and return false.
+   *
+   * @param p Point to check.
+   * @return True if the point is in the region where the axonal fiber orientation
+   *         is circumferential, false otherwise.
+   */
   bool
   check_axonal_region(const Point<dim> &p) const
   {
@@ -506,6 +533,15 @@ protected:
   RadialDirection<dim>          radial;
 };
 
+/**
+ * Factory function to create the direction of the fibers in the brain.
+ * The direction is specified by the user in the main.cpp file.
+ *
+ * @param orientation Name of the orientation.
+ * @param global_center Global center of the brain.
+ * @return Unique pointer to the direction.
+ * @throw std::invalid_argument if the orientation name is invalid.
+ */
 template <int dim>
 std::unique_ptr<Function<dim>>
 get_direction(std::string orientation, const Point<dim> &global_center)

@@ -61,7 +61,7 @@ using namespace dealii;
 class FisherKolmogorov
 {
 public:
-  static constexpr unsigned int dim = 2;
+  static constexpr unsigned int dim = 3;
 
   /**
    * This class is used to define the isotropic diffusion coefficient dext for
@@ -170,7 +170,8 @@ public:
   };
 
   /**
-   * This class is used to define the initial concentration c(t = 0).
+   * This class is used to define the initial concentration of the misfolded
+   * protein c(t = 0).
    */
   class FunctionC0 : public Function<dim>
   {
@@ -239,12 +240,6 @@ protected:
   // Parallel output stream.
   ConditionalOStream pcout;
 
-  GrowthCoefficientWhite growth_coefficient_white;
-
-  GrowthCoefficientGrey growth_coefficient_grey;
-
-  // SpreadingCoefficient spreading_coefficient;
-
   IsotropicDiffusionCoefficientWhite isotropic_coefficient_white;
 
   IsotropicDiffusionCoefficientGrey isotropic_coefficient_grey;
@@ -252,6 +247,10 @@ protected:
   AnisotropicDiffusionCoefficientGrey anisotropic_coefficient_grey;
 
   AnisotropicDiffusionCoefficientWhite anisotropic_coefficient_white;
+
+  GrowthCoefficientWhite growth_coefficient_white;
+
+  GrowthCoefficientGrey growth_coefficient_grey;
 
   FunctionC0 c_0;
 
@@ -272,7 +271,7 @@ protected:
 
   Grey_matter<dim> grey_matter;
 
-  // direction of the fiber orientation
+  // direction function of the fiber orientation.
   std::unique_ptr<Function<dim>> direction;
 
   // Triangulation. The parallel::fullydistributed::Triangulation class manages

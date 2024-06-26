@@ -14,8 +14,9 @@
  * grey and white matter region in order to set different parameters depending
  * on the type of element considered.
  * Computes the center of the domain, necessary to implement the axonal
- * transport coefficient (parameter). Initializes the structure of the linear
- * system, which is what the starting problem is reduced to.
+ * transport coefficient (parameter), and initializes the fiber orientation .
+ * Initializes the structure of the linear system, which is what the starting
+ * problem is reduced to.
  */
 void
 FisherKolmogorov::setup()
@@ -67,7 +68,8 @@ FisherKolmogorov::setup()
     pcout << "  Number of DoFs = " << dof_handler.n_dofs() << std::endl;
   }
 
-  // Initialize grey and white matter regions
+  // Initialize grey and white matter regions by setting the material_id to 1
+  // for grey matter elements and leaving it to 0 for white matter ones.
   {
     pcout << "Initializing the white and grey matter regions" << std::endl;
     grey_matter = Grey_matter<dim>();
@@ -102,9 +104,11 @@ FisherKolmogorov::setup()
   }
 
   // Initialize the fiber orientation.
-  pcout << "Initializing the fiber orientation" << std::endl;
-  pcout << "  Orientation = " << orientation << std::endl;
-  direction = get_direction<dim>(orientation, global_center);
+  {
+    pcout << "Initializing the fiber orientation" << std::endl;
+    pcout << "  Orientation = " << orientation << std::endl;
+    direction = get_direction<dim>(orientation, global_center);
+  }
 
   // Initialize the linear system.
   {
@@ -170,7 +174,6 @@ FisherKolmogorov::assemble_system()
 
   double         growth_coefficient_loc;
   Tensor<2, dim> spreading_coefficient_loc;
-  Point<dim>     cell_center;
 
   for (const auto &cell : dof_handler.active_cell_iterators())
     {
@@ -186,17 +189,19 @@ FisherKolmogorov::assemble_system()
       fe_values.get_function_gradients(solution, solution_gradient_loc);
       fe_values.get_function_values(solution_old, solution_old_loc);
 
-      cell_center = cell->center();
-
       for (unsigned int q = 0; q < n_q; ++q)
         {
           Vector<double> n_loc(dim);
           direction->vector_value(fe_values.quadrature_point(q), n_loc);
 
+          // Convert the direction vector to a Tensor.
           Tensor<1, dim> n_loc_tensor;
           for (unsigned int i = 0; i < dim; ++i)
             n_loc_tensor[i] = n_loc[i];
 
+          // Set the growth and spreading coefficients depending on the type
+          // of element: grey matter (material_id = 1) or white matter
+          // (material_id = 0).
           if (cell->material_id() == 1)
             {
               growth_coefficient_loc =
@@ -417,6 +422,8 @@ FisherKolmogorov::solve()
  * Creates the output data for the selected time step, in particular a VTU
  * file for each MPI process, a PVTU file that points to VTU files and
  * contains information about splitting data across multiple MPI processes.
+ * The output files are saved in the build directory.
+ *
  * @param time_step   represents a distinct instant within the time interval T
  */
 void
