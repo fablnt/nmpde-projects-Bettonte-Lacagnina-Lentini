@@ -48,7 +48,7 @@ FisherKolmogorov::setup()
     pcout << "  DoFs per cell              = " << fe->dofs_per_cell
           << std::endl;
 
-    quadrature = std::make_unique<QGauss<dim>>(r + 1);
+    quadrature = std::make_unique<QGaussSimplex<dim>>(r + 1);
 
     pcout << "  Quadrature points per cell = " << quadrature->size()
           << std::endl;
@@ -70,15 +70,15 @@ FisherKolmogorov::setup()
   // Initialize grey and white matter regions
   {
     pcout << "Initializing the white and grey matter regions" << std::endl;
+    grey_matter = Grey_matter<dim>();
+
     for (const auto &cell : dof_handler.active_cell_iterators())
       {
         if (!cell->is_locally_owned())
           continue;
 
-        if (Grey_matter<dim>::check_region(cell->center()))
-          {
-            cell->set_material_id(1);
-          }
+        if (grey_matter.check_grey_matter(cell->center()))
+          cell->set_material_id(1);
       }
   }
 
@@ -98,11 +98,13 @@ FisherKolmogorov::setup()
 
     global_center /= mesh.n_global_active_cells();
 
-    std::cout << "Center of the domain = " << global_center << std::endl;
-
-
-    direction = get_direction<dim>(orientation, global_center);
+    pcout << "Center of the domain = " << global_center << std::endl;
   }
+
+  // Initialize the fiber orientation.
+  pcout << "Initializing the fiber orientation" << std::endl;
+  pcout << "  Orientation = " << orientation << std::endl;
+  direction = get_direction<dim>(orientation, global_center);
 
   // Initialize the linear system.
   {
@@ -168,7 +170,6 @@ FisherKolmogorov::assemble_system()
 
   double         growth_coefficient_loc;
   Tensor<2, dim> spreading_coefficient_loc;
-  Tensor<1, dim> n_loc;
   Point<dim>     cell_center;
 
   for (const auto &cell : dof_handler.active_cell_iterators())
@@ -274,17 +275,16 @@ FisherKolmogorov::assemble_system()
               // Forcing term equals to 0, no contribution to
               // cell_residual(i)
             }
-
-          cell->get_dof_indices(dof_indices);
-
-          jacobian_matrix.add(dof_indices, cell_matrix);
-          residual_vector.add(dof_indices, cell_residual);
         }
 
-      // Parallel communication among processes
-      jacobian_matrix.compress(VectorOperation::add);
-      residual_vector.compress(VectorOperation::add);
+      cell->get_dof_indices(dof_indices);
+
+      jacobian_matrix.add(dof_indices, cell_matrix);
+      residual_vector.add(dof_indices, cell_residual);
     }
+  // Parallel communication among processes
+  jacobian_matrix.compress(VectorOperation::add);
+  residual_vector.compress(VectorOperation::add);
 }
 
 /**
@@ -313,7 +313,8 @@ FisherKolmogorov::solve_linear_system()
 
   // solve with GMRES solver
   solver.solve(jacobian_matrix, delta_owned, residual_vector, preconditioner);
-  pcout << "  " << solver_control.last_step() << " CG iterations" << std::endl;
+  pcout << "  " << solver_control.last_step() << " GMRES iterations"
+        << std::endl;
 }
 
 /**

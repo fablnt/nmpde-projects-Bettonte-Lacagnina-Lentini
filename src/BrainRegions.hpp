@@ -231,8 +231,8 @@ public:
    * @param p Point to check.
    * @return True if the point is inside the grey matter region, false otherwise.
    */
-  static bool
-  check_region(const Point<dim> &p)
+  bool
+  check_grey_matter(const Point<dim> &p)
   {
     return false;
   }
@@ -248,8 +248,8 @@ public:
   Grey_matter()
   {}
 
-  static bool
-  check_region(const Point<3> &p)
+  bool
+  check_grey_matter(const Point<3> &p)
   {
     return ((p[0] < 33 || p[0] > 70) || (p[1] < 25 || p[1] > 120) ||
             (p[2] > 85));
@@ -266,25 +266,17 @@ public:
   Grey_matter()
   {}
 
-  static bool
-  check_region(const Point<2> &p)
+  bool
+  check_grey_matter(const Point<2> &p)
   {
     return (p[0] * p[0]) / (a * a) + (p[1] * p[1]) / (b * b) > 1.0;
   }
 
 private:
-  // semi-axes length of the ellipse representing the grey matter region.
+  // semi-axes length of the ellipse representing the grey matter region in 2D.
   static constexpr double a = 60.0;
   static constexpr double b = 40.0;
 };
-
-/**
- * Class to define the brain region where fibers are oriented in the
- * circumferential direction.
- *
- * @tparam dim Dimension of the problem.
- */
-
 
 template <int dim>
 class RadialDirection : public Function<dim>
@@ -301,6 +293,7 @@ public:
     for (unsigned int i = 0; i < dim; ++i)
       radial[i] = p[i] - global_center[i];
     radial /= radial.l2_norm();
+
     values[0] = radial[0];
     values[1] = radial[1];
     if (dim == 3)
@@ -314,6 +307,7 @@ public:
     for (unsigned int i = 0; i < dim; ++i)
       radial[i] = p[i] - global_center[i];
     radial /= radial.l2_norm();
+
     return radial[component];
   }
 
@@ -463,36 +457,26 @@ class AxonBasedDirection : public Function<dim>
 public:
   AxonBasedDirection(const Point<dim> &global_center_)
     : global_center(global_center_)
+    , circumferential(global_center_)
+    , radial(global_center_)
   {}
 
   virtual void
   vector_value(const Point<dim> &p, Vector<double> &values) const override
   {
     if (check_axonal_region(p))
-      {
-        CircumferentialDirection<dim> circumferential(global_center);
-        circumferential.vector_value(p, values);
-      }
+      circumferential.vector_value(p, values);
     else
-      {
-        RadialDirection<dim> radial(global_center);
-        radial.vector_value(p, values);
-      }
+      radial.vector_value(p, values);
   }
 
   virtual double
   value(const Point<dim> &p, const unsigned int component = 0) const override
   {
     if (check_axonal_region(p))
-      {
-        CircumferentialDirection<dim> circumferential(global_center);
-        return circumferential.value(p, component);
-      }
+      return circumferential.value(p, component);
     else
-      {
-        RadialDirection<dim> radial(global_center);
-        return radial.value(p, component);
-      }
+      return radial.value(p, component);
   }
 
   bool
@@ -517,7 +501,9 @@ public:
   }
 
 protected:
-  const Point<dim> global_center;
+  const Point<dim>              global_center;
+  CircumferentialDirection<dim> circumferential;
+  RadialDirection<dim>          radial;
 };
 
 template <int dim>
@@ -533,7 +519,5 @@ get_direction(std::string orientation, const Point<dim> &global_center)
   else
     throw std::invalid_argument("Invalid orientation");
 }
-
-// ############################### OLD VERSION ################################
 
 #endif

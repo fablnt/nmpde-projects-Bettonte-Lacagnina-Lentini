@@ -61,7 +61,7 @@ using namespace dealii;
 class FisherKolmogorov
 {
 public:
-  static constexpr unsigned int dim = 3;
+  static constexpr unsigned int dim = 2;
 
   /**
    * This class is used to define the isotropic diffusion coefficient dext for
@@ -270,6 +270,9 @@ protected:
 
   Point<dim> global_center;
 
+  Grey_matter<dim> grey_matter;
+
+  // direction of the fiber orientation
   std::unique_ptr<Function<dim>> direction;
 
   // Triangulation. The parallel::fullydistributed::Triangulation class manages
