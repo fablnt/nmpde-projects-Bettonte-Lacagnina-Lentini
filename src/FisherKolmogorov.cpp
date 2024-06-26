@@ -276,8 +276,6 @@ FisherKolmogorov::assemble_system()
               // cell_residual(i)
             }
         }
-<<<<<<< experimental/alternative-version
-
       cell->get_dof_indices(dof_indices);
 
       jacobian_matrix.add(dof_indices, cell_matrix);
@@ -286,18 +284,6 @@ FisherKolmogorov::assemble_system()
   // Parallel communication among processes
   jacobian_matrix.compress(VectorOperation::add);
   residual_vector.compress(VectorOperation::add);
-=======
-          cell->get_dof_indices(dof_indices);
-
-          jacobian_matrix.add(dof_indices, cell_matrix);
-          residual_vector.add(dof_indices, cell_residual);
-    }
-
-      // Parallel communication among processes
-      jacobian_matrix.compress(VectorOperation::add);
-      residual_vector.compress(VectorOperation::add);
-    
->>>>>>> main
 }
 
 /**
@@ -326,12 +312,9 @@ FisherKolmogorov::solve_linear_system()
 
   // solve with GMRES solver
   solver.solve(jacobian_matrix, delta_owned, residual_vector, preconditioner);
-<<<<<<< experimental/alternative-version
+
   pcout << "  " << solver_control.last_step() << " GMRES iterations"
         << std::endl;
-=======
-  pcout << "  " << solver_control.last_step() << " GMRES iterations" << std::endl;
->>>>>>> main
 }
 
 /**
