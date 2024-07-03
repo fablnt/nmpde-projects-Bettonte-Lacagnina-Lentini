@@ -59,6 +59,42 @@ $ make
 
 ## Usage
 ### Set parameters  
+The parameters for the solver are set directly in the code. To modify them you need to modify the following fields:
+
+- The following parameters can be modified directly in the `main.cpp` file:
+
+| Parameter        | Description                                           | Example Value                |
+|------------------|-------------------------------------------------------|------------------------------|
+| `mesh_filename`  | Path to the mesh file                                 | `"../mesh/brain-h3.0.msh"`   |
+| `degree`         | Degree of the finite element space                    | `1`                          |
+| `deltat`         | Time step size                                        | `0.4`                        |
+| `T`              | Final time for simulation                             | `40`                         |
+| `seeding_region` | Region where protein seeding begins                   | `"Amyloid-Beta deposits"`    |
+| `orientation`    | Fiber orientation                                     | `"axon-based"`               |
+
+- To set the dimension of the problem you need to modify the following variable in the `FisherKolmogorov.hpp` file:
+```cpp
+static constexpr unsigned int dim = 3;
+```
+
+- To set the coefficients of the Fisher-Kolmogorov equation, you need to modify the return value of the following method:
+```cpp
+ virtual double
+    value(const Point<dim> & p,
+          const unsigned int component = 0) const override
+```
+that is overridden in the classes representing the equation coefficients defined in the `FisherKolmogorov.hpp` file. In particular:
+| Class                                    | Description                                             |
+|------------------------------------------|---------------------------------------------------------|
+| `IsotropicDiffusionCoefficientWhite`     | Coefficient $d^{ext}$ for white matter region           |
+| `IsotropicDiffusionCoefficientGrey`      | Coefficient $d^{ext}$ for grey matter region            |
+| `AnisotropicDiffusionCoefficientWhite`   | Coefficient $d^{axn}$ for white matter region           |
+| `AnisotropicDiffusionCoefficientGrey`    | Coefficient $d^{axn}$ for grey matter region            |
+| `GrowthCoefficientWhite`                 | Coefficient $\alpha$ for white matter region            |
+| `GrowthCoefficientGrey`                  | Coefficient $\alpha$ for grey matter region             |
+| `FunctionC0`                             | Initial concentration $c(t = 0)$                        |
+
+
 
 
 ### Run the executables
