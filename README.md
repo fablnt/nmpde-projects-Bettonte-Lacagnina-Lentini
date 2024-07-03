@@ -84,15 +84,15 @@ static constexpr unsigned int dim = 3;
           const unsigned int component = 0) const override
 ```
 that is overridden in the classes representing the equation coefficients defined in the `FisherKolmogorov.hpp` file. In particular:
-| Class                                    | Description                                             |
-|------------------------------------------|---------------------------------------------------------|
-| `IsotropicDiffusionCoefficientWhite`     | Coefficient $d^{ext}$ for white matter region           |
-| `IsotropicDiffusionCoefficientGrey`      | Coefficient $d^{ext}$ for grey matter region            |
-| `AnisotropicDiffusionCoefficientWhite`   | Coefficient $d^{axn}$ for white matter region           |
-| `AnisotropicDiffusionCoefficientGrey`    | Coefficient $d^{axn}$ for grey matter region            |
-| `GrowthCoefficientWhite`                 | Coefficient $\alpha$ for white matter region            |
-| `GrowthCoefficientGrey`                  | Coefficient $\alpha$ for grey matter region             |
-| `FunctionC0`                             | Initial concentration $c(t = 0)$                        |
+| Class                                                                            | Description                                                  |
+|----------------------------------------------------------------------------------|--------------------------------------------------------------|
+| [IsotropicDiffusionCoefficientWhite](../include/FisherKolmogorov.hpp#L70-L82)    | Coefficient $d^{ext}$ for white matter region  (Lines 67-80) |
+| `IsotropicDiffusionCoefficientGrey`                                              | Coefficient $d^{ext}$ for grey matter region                 |
+| `AnisotropicDiffusionCoefficientWhite`                                           | Coefficient $d^{axn}$ for white matter region                |
+| `AnisotropicDiffusionCoefficientGrey`                                            | Coefficient $d^{axn}$ for grey matter region                 |
+| `GrowthCoefficientWhite`                                                         | Coefficient $\alpha$ for white matter region                 |
+| `GrowthCoefficientGrey`                                                          | Coefficient $\alpha$ for grey matter region                  |
+| `FunctionC0`                                                                     | Initial concentration $c(t = 0)$                             |
 
 
 
