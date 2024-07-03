@@ -14,7 +14,7 @@ main(int argc, char *argv[])
   const unsigned int degree         = 1;
   const double       deltat         = 0.4;
   const double       T              = 40;
-  const std::string  seeding_region = "TPD-43 inclusions";
+  const std::string  seeding_region = "Amyloid-Beta deposits";
   const std::string  orientation    = "axon-based";
 
   FisherKolmogorov problem(
