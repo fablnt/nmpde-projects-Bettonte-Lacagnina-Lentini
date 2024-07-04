@@ -49,7 +49,7 @@ $ make
 Two executables are created into `build`, 'main1D' for 1D simulation and 'main' for 2D and 3D simulations. 
 
 ### Mesh Generation
-Gmsh is required in order to generate the meshes (mesh1D.msh, ellipse.msh, brain-h3.0.msh) starting from the .geo files located in the mesh folder.
+Gmsh is required in order to generate the meshes (mesh1D.msh, ellipse.msh, brain-h3.0.msh) starting from the .geo files located in the `mesh` folder.
 
 Use the Makefile running the commands:
 ```bash
@@ -99,11 +99,11 @@ that is overridden in the classes representing the equation coefficients defined
 
 ### Run the executables
 
-'main1D' can be executed through
+`main1D` can be executed through
 ```bash
 $ ./main1D
 ```
-Since 'main' supports parallel execution with MPI paradigm via deal.ii, it is possible to execute it in two ways:
+Since `main` supports parallel execution with MPI paradigm via deal.ii, it is possible to execute it in two ways:
 1. **Serial Version**
 ```bash
 $ ./main
