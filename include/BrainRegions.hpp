@@ -333,10 +333,10 @@ protected:
  * products:
  * First, an orthogonal vector is computed as the cross product between the
  * radial vector and an arbitrary vector. The arbitrary vector is chosen to be
- * as orthogonal as possible to the radial direction. Second, the
- * circumferential direction is computed as the cross product between the radial
- * vector and the orthogonal vector. This ensures that the circumferential
- * direction is tangent to the radial direction.
+ * as orthogonal as possible to the radial direction.
+ * Second, the circumferential direction is computed as the cross product
+ * between the radial vector and the orthogonal vector. This ensures that the
+ * circumferential direction is tangent to the radial direction.
  *
  * @tparam dim Dimension of the problem.
  */
@@ -361,10 +361,6 @@ public:
         orthogonal[0] = -p[1];
         orthogonal[1] = p[0];
         orthogonal /= orthogonal.l2_norm();
-
-        // Cross product between radial and orthogonal directions
-        values[0] = radial[1] * orthogonal[0] - radial[0] * orthogonal[1];
-        values[1] = radial[0] * orthogonal[0] + radial[1] * orthogonal[1];
       }
     else
       {
@@ -422,12 +418,6 @@ public:
         orthogonal[0] = -p[1];
         orthogonal[1] = p[0];
         orthogonal /= orthogonal.l2_norm();
-
-        // Cross product between radial and orthogonal directions.
-        circumferential[0] =
-          radial[1] * orthogonal[0] - radial[0] * orthogonal[1];
-        circumferential[1] =
-          radial[0] * orthogonal[0] + radial[1] * orthogonal[1];
       }
     else
       {
