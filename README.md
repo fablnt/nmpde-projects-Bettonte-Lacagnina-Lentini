@@ -46,7 +46,7 @@ $ cd build
 $ cmake ..
 $ make
 ```
-Two executables are created into `build`, 'main1D' for 1D simulation and 'main' for 2D and 3D simulations. 
+Two executables are created into `build`, `main1D` for 1D simulation and `main` for 2D and 3D simulations. 
 
 ### Mesh Generation
 Gmsh is required in order to generate the meshes (mesh1D.msh, ellipse.msh, brain-h3.0.msh) starting from the .geo files located in the `mesh` folder.
