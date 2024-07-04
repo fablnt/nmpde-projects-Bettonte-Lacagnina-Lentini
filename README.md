@@ -72,7 +72,7 @@ The parameters for the solver are set directly in the code. To modify them you n
 | `seeding_region` | Region where protein seeding begins                   | `"Amyloid-Beta deposits"`    |
 | `orientation`    | Fiber orientation                                     | `"axon-based"`               |
 
-- To set the dimension of the problem you need to modify the following variable in the `FisherKolmogorov.hpp` file:
+- To set the dimension of the problem you need to modify the following variable ([(Line 54)](include/FisherKolmogorov.hpp#L54)) in the `FisherKolmogorov.hpp` file:
 ```cpp
 static constexpr unsigned int dim = 3;
 ```
@@ -86,16 +86,15 @@ static constexpr unsigned int dim = 3;
 that is overridden in the classes representing the equation coefficients defined in the `FisherKolmogorov.hpp` file. In particular:
 | Class                                                                            | Description                                                  |
 |----------------------------------------------------------------------------------|--------------------------------------------------------------|
-| [IsotropicDiffusionCoefficientWhite](include/FisherKolmogorov.hpp#L70-L82)    | Coefficient $d^{ext}$ for white matter region  (Lines 67-80) |
-| `IsotropicDiffusionCoefficientGrey`                                              | Coefficient $d^{ext}$ for grey matter region                 |
-| `AnisotropicDiffusionCoefficientWhite`                                           | Coefficient $d^{axn}$ for white matter region                |
-| `AnisotropicDiffusionCoefficientGrey`                                            | Coefficient $d^{axn}$ for grey matter region                 |
-| `GrowthCoefficientWhite`                                                         | Coefficient $\alpha$ for white matter region                 |
-| `GrowthCoefficientGrey`                                                          | Coefficient $\alpha$ for grey matter region                  |
-| `FunctionC0`                                                                     | Initial concentration $c(t = 0)$                             |
+| `IsotropicDiffusionCoefficientWhite`                                             | Coefficient $d^{ext}$ for white matter region [(Lines 60-72)](include/FisherKolmogorov.hpp#L60-L72)      |
+| `IsotropicDiffusionCoefficientGrey`                                              | Coefficient $d^{ext}$ for grey matter region [(Lines 78-90)](include/FisherKolmogorov.hpp#L78-L90)       |
+| `AnisotropicDiffusionCoefficientWhite`                                           | Coefficient $d^{axn}$ for white matter region [(Lines 96-108)](include/FisherKolmogorov.hpp#L96-L108)    |
+| `AnisotropicDiffusionCoefficientGrey`                                            | Coefficient $d^{axn}$ for grey matter region [(Lines 114-126)](include/FisherKolmogorov.hpp#L114-L126)   |
+| `GrowthCoefficientWhite`                                                         | Coefficient $\alpha$ for white matter region [(Lines 131-143)](include/FisherKolmogorov.hpp#L131-L143)   |
+| `GrowthCoefficientGrey`                                                          | Coefficient $\alpha$ for grey matter region [(Lines 148-160)](include/FisherKolmogorov.hpp#L148-L160)    |
+| `FunctionC0`                                                                     | Initial concentration $c(t = 0)$ [(Lines 166-187)](include/FisherKolmogorov.hpp#L166-L187)               |
 
-
-
+The available values for the seeding region variable are : "Tau inclusions", "TPD-43 inclusions", "Amyloid-Beta deposits". The available values for the fiber orientation are: "radial", "circumferential", "axon-based".
 
 ### Run the executables
 
