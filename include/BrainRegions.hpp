@@ -361,6 +361,9 @@ public:
         orthogonal[0] = -p[1];
         orthogonal[1] = p[0];
         orthogonal /= orthogonal.l2_norm();
+
+        values[0] = orthogonal[0];
+        values[1] = orthogonal[1];
       }
     else
       {
@@ -418,6 +421,9 @@ public:
         orthogonal[0] = -p[1];
         orthogonal[1] = p[0];
         orthogonal /= orthogonal.l2_norm();
+
+        circumferential[0] = orthogonal[0];
+        circumferential[1] = orthogonal[1];
       }
     else
       {
