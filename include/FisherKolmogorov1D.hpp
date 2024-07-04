@@ -6,7 +6,7 @@
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/dofs/dof_tools.h>
 
-#include <deal.II/fe/fe_q.h> //Haader taken to obtain FE_Q class
+#include <deal.II/fe/fe_q.h>
 #include <deal.II/fe/fe_simplex_p.h>
 #include <deal.II/fe/fe_values.h>
 #include <deal.II/fe/mapping_fe.h>
@@ -16,20 +16,16 @@
 #include <deal.II/grid/grid_out.h>
 #include <deal.II/grid/tria.h>
 
-// Two header taken by reading documentation in order to obatin finite element
-// object
 #include <deal.II/lac/petsc_sparse_matrix.h>
 #include <deal.II/lac/petsc_vector.h>
-
-// to deal with linear systems (GMRES solver)
 #include <deal.II/lac/precondition.h>
 #include <deal.II/lac/solver_gmres.h>
-#include <deal.II/lac/sparse_matrix.h> //To obtain SparseMatrix
+#include <deal.II/lac/sparse_matrix.h>
 #include <deal.II/lac/vector.h>
 
-#include <deal.II/numerics/data_out.h>     //used in output method
-#include <deal.II/numerics/matrix_tools.h> //TO CHECK
-#include <deal.II/numerics/vector_tools.h> //used in solve method
+#include <deal.II/numerics/data_out.h>
+#include <deal.II/numerics/matrix_tools.h>
+#include <deal.II/numerics/vector_tools.h>
 
 #include <filesystem>
 #include <fstream>

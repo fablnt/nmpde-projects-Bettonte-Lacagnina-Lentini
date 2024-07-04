@@ -280,7 +280,8 @@ private:
 
 
 /**
- * Class to define the Radial direction of the fibers in the brain.
+ * Class to define the Radial direction of the fibers in the brain, with respect
+ * to the global center of the domain.
  *
  * @tparam dim Dimension of the problem.
  */
@@ -321,7 +322,21 @@ protected:
   const Point<dim> global_center;
 };
 /**
- * Class to define the Circumferential direction of the fibers in the brain.
+ * Class to define the Circumferential direction of the fibers in the brain
+ * relative to the global center of the domain. The cirumferential direction is
+ * tangent to the radial direction.
+ *
+ * In the 2D problem, the circumferential direction is obtained by rotating
+ * the radial vector by 90° clockwise.
+ *
+ * In the 3D problem, the circumferential direction is defined using cross
+ * products:
+ * First, an orthogonal vector is computed as the cross product between the
+ * radial vector and an arbitrary vector. The arbitrary vector is chosen to be
+ * as orthogonal as possible to the radial direction. Second, the
+ * circumferential direction is computed as the cross product between the radial
+ * vector and the orthogonal vector. This ensures that the circumferential
+ * direction is tangent to the radial direction.
  *
  * @tparam dim Dimension of the problem.
  */
@@ -340,16 +355,16 @@ public:
     for (unsigned int i = 0; i < dim; ++i)
       radial[i] = p[i] - global_center[i];
     radial /= radial.l2_norm();
-    Vector<double> azimuthal(dim);
+    Vector<double> orthogonal(dim);
     if constexpr (dim == 2)
       {
-        azimuthal[0] = -p[1];
-        azimuthal[1] = p[0];
-        azimuthal /= azimuthal.l2_norm();
+        orthogonal[0] = -p[1];
+        orthogonal[1] = p[0];
+        orthogonal /= orthogonal.l2_norm();
 
-        // Cross product between radial and azimuthal directions
-        values[0] = radial[1] * azimuthal[0] - radial[0] * azimuthal[1];
-        values[1] = radial[0] * azimuthal[0] + radial[1] * azimuthal[1];
+        // Cross product between radial and orthogonal directions
+        values[0] = radial[1] * orthogonal[0] - radial[0] * orthogonal[1];
+        values[1] = radial[0] * orthogonal[0] + radial[1] * orthogonal[1];
       }
     else
       {
@@ -374,20 +389,22 @@ public:
             arbitrary_vector[2] = 1.0;
           }
 
-        // Compute the azimuthal direction as the cross product of radial and
-        // arbitrary_vector
-        azimuthal[0] =
+        // Compute the orthogonal direction as the cross product of radial and
+        // arbitrary_vector.
+        orthogonal[0] =
           radial[1] * arbitrary_vector[2] - radial[2] * arbitrary_vector[1];
-        azimuthal[1] =
+        orthogonal[1] =
           radial[2] * arbitrary_vector[0] - radial[0] * arbitrary_vector[2];
-        azimuthal[2] =
+        orthogonal[2] =
           radial[0] * arbitrary_vector[1] - radial[1] * arbitrary_vector[0];
 
-        azimuthal /= azimuthal.l2_norm();
+        orthogonal /= orthogonal.l2_norm();
 
-        values[0] = radial[1] * azimuthal[2] - radial[2] * azimuthal[1];
-        values[1] = radial[2] * azimuthal[0] - radial[0] * azimuthal[2];
-        values[2] = radial[0] * azimuthal[1] - radial[1] * azimuthal[0];
+        // Compute the circumferential direction as the cross product of radial
+        // and orthogonal directions.
+        values[0] = radial[1] * orthogonal[2] - radial[2] * orthogonal[1];
+        values[1] = radial[2] * orthogonal[0] - radial[0] * orthogonal[2];
+        values[2] = radial[0] * orthogonal[1] - radial[1] * orthogonal[0];
       }
   }
 
@@ -399,18 +416,18 @@ public:
       radial[i] = p[i] - global_center[i];
     radial /= radial.l2_norm();
     Vector<double> circumferential(dim);
-    Vector<double> azimuthal(dim);
+    Vector<double> orthogonal(dim);
     if constexpr (dim == 2)
       {
-        azimuthal[0] = -p[1];
-        azimuthal[1] = p[0];
-        azimuthal /= azimuthal.l2_norm();
+        orthogonal[0] = -p[1];
+        orthogonal[1] = p[0];
+        orthogonal /= orthogonal.l2_norm();
 
-        // Cross product between radial and azimuthal directions
+        // Cross product between radial and orthogonal directions.
         circumferential[0] =
-          radial[1] * azimuthal[0] - radial[0] * azimuthal[1];
+          radial[1] * orthogonal[0] - radial[0] * orthogonal[1];
         circumferential[1] =
-          radial[0] * azimuthal[0] + radial[1] * azimuthal[1];
+          radial[0] * orthogonal[0] + radial[1] * orthogonal[1];
       }
     else
       {
@@ -435,24 +452,26 @@ public:
             arbitrary_vector[2] = 1.0;
           }
 
-        // Compute the azimuthal direction as the cross product of radial and
-        // arbitrary_vector
-        Vector<double> azimuthal;
-        azimuthal[0] =
+        // Compute the orthogonal direction as the cross product of radial and
+        // arbitrary_vector.
+        Vector<double> orthogonal;
+        orthogonal[0] =
           radial[1] * arbitrary_vector[2] - radial[2] * arbitrary_vector[1];
-        azimuthal[1] =
+        orthogonal[1] =
           radial[2] * arbitrary_vector[0] - radial[0] * arbitrary_vector[2];
-        azimuthal[2] =
+        orthogonal[2] =
           radial[0] * arbitrary_vector[1] - radial[1] * arbitrary_vector[0];
 
-        azimuthal /= azimuthal.l2_norm();
+        orthogonal /= orthogonal.l2_norm();
 
+        // Compute the circumferential direction as the cross product of radial
+        // and orthogonal directions.
         circumferential[0] =
-          radial[1] * azimuthal[2] - radial[2] * azimuthal[1];
+          radial[1] * orthogonal[2] - radial[2] * orthogonal[1];
         circumferential[1] =
-          radial[2] * azimuthal[0] - radial[0] * azimuthal[2];
+          radial[2] * orthogonal[0] - radial[0] * orthogonal[2];
         circumferential[2] =
-          radial[0] * azimuthal[1] - radial[1] * azimuthal[0];
+          radial[0] * orthogonal[1] - radial[1] * orthogonal[0];
       }
     return circumferential[component];
   }

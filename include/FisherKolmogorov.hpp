@@ -1,6 +1,7 @@
 #ifndef FISCHER_KOLMOGOROV_HPP
 #define FISCHER_KOLMOGOROV_HPP
 
+#include <deal.II/base/conditional_ostream.h>
 #include <deal.II/base/function.h>
 #include <deal.II/base/symmetric_tensor.h>
 #include <deal.II/base/tensor.h>
@@ -21,26 +22,15 @@
 #include <deal.II/grid/grid_out.h>
 #include <deal.II/grid/tria.h>
 
-
-// Two header taken by reading documentation in order to obatin finite element
-// object
 #include <deal.II/lac/petsc_sparse_matrix.h>
 #include <deal.II/lac/petsc_vector.h>
-
-// to deal with linear systems (GMRES solver in combination with AMG
-// preconditioner)
-#include <deal.II/base/tensor.h>
-
 #include <deal.II/lac/solver_cg.h>
 #include <deal.II/lac/solver_gmres.h>
 #include <deal.II/lac/trilinos_precondition.h>
 #include <deal.II/lac/trilinos_sparse_matrix.h>
 
-// Header taken in order to obatin ConditionalOStream type
-#include <deal.II/base/conditional_ostream.h>
-
-#include <deal.II/numerics/data_out.h>     //used in output method
-#include <deal.II/numerics/vector_tools.h> //used in solve method
+#include <deal.II/numerics/data_out.h>
+#include <deal.II/numerics/vector_tools.h>
 
 #include <boost/geometry.hpp>
 
