@@ -1,4 +1,4 @@
-#include "FisherKolmogorov.hpp"
+#include "../include/FisherKolmogorov.hpp"
 
 /**
  * Function called by main() function.

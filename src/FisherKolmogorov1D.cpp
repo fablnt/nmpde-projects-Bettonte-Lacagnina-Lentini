@@ -1,4 +1,4 @@
-#include "FisherKolmogorov1D.hpp"
+#include "../include/FisherKolmogorov1D.hpp"
 
 void
 FisherKolmogorov1D::setup()

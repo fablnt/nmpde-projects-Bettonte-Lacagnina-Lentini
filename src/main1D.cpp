@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "FisherKolmogorov1D.hpp"
+#include "../include/FisherKolmogorov1D.hpp"
 
 int
 main()
