@@ -33,11 +33,17 @@
 
 using namespace dealii;
 
+/**
+ * Class representing the Fisher-Kolmogorov equation in 1D, solved serially.
+ */
 class FisherKolmogorov1D
 {
 public:
   static constexpr unsigned int dim = 1;
 
+  /**
+   * Class representing the initial concentration c(t = 0).
+   */
   class FunctionC0 : public Function<dim>
   {
   public:
@@ -106,8 +112,10 @@ protected:
   // Initial concentration c(t = 0)
   FunctionC0 c_0;
 
+  // Current time.
   double time;
 
+  // Final time.
   const double T;
 
   // Path to the mesh file.
@@ -116,8 +124,10 @@ protected:
   // Polynomial degree.
   const unsigned int r;
 
+  // Time step.
   const double deltat;
 
+  // Triangulation.
   Triangulation<dim> mesh;
 
   // Finite element space.
@@ -129,6 +139,7 @@ protected:
   // DoF handler.
   DoFHandler<dim> dof_handler;
 
+  // Sparsity pattern.
   SparsityPattern sparsity_pattern;
 
   // Jacobian matrix.

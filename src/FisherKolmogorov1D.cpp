@@ -1,5 +1,8 @@
 #include "../include/FisherKolmogorov1D.hpp"
 
+// The following source code is a serial version of the FisherKolmorov.cpp file.
+// For documentation, please refer to the FisherKolmorov.cpp file.
+
 void
 FisherKolmogorov1D::setup()
 {
