@@ -1,8 +1,7 @@
 #include "../include/FisherKolmogorov.hpp"
 
 /**
- * Function called by main() function.
- * Creates the setup of the problem.
+ * Function called by main() function that creates the setup of the problem.
  * Takes the mesh as input, requesting an acceptable .msh file from deal.II;
  * in case the mesh is built from scratch (as in our 2D case) it is necessary to
  * follow the 'step-49 tutorial' in the reference documentation for deal.II
@@ -14,7 +13,7 @@
  * grey and white matter region in order to set different parameters depending
  * on the type of element considered.
  * Computes the center of the domain, necessary to implement the axonal
- * transport coefficient (parameter), and initializes the fiber orientation .
+ * transport coefficient (parameter), and initializes the fiber orientation.
  * Initializes the structure of the linear system, which is what the starting
  * problem is reduced to.
  */
@@ -172,6 +171,7 @@ FisherKolmogorov::assemble_system()
   // Value of the solution at previous timestep (un) on current cell.
   std::vector<double> solution_old_loc(n_q); // un+1
 
+  // Growth and spreading coefficients on current cell.
   double         growth_coefficient_loc;
   Tensor<2, dim> spreading_coefficient_loc;
 
@@ -301,7 +301,7 @@ FisherKolmogorov::assemble_system()
 void
 FisherKolmogorov::solve_linear_system()
 {
-  // setting for solver
+  // Setting for solver
   SolverControl solver_control(
     1000,
     1e-6 * residual_vector.l2_norm()); // residual norm taken into account
@@ -315,7 +315,7 @@ FisherKolmogorov::solve_linear_system()
   preconditioner.initialize(
     jacobian_matrix, TrilinosWrappers::PreconditionAMG::AdditionalData(1.0));
 
-  // solve with GMRES solver
+  // Solve with GMRES solver
   solver.solve(jacobian_matrix, delta_owned, residual_vector, preconditioner);
 
   pcout << "  " << solver_control.last_step() << " GMRES iterations"
@@ -326,7 +326,7 @@ FisherKolmogorov::solve_linear_system()
  * Solves the non-linear problem using the Newton method.
  * Invoked for each time step by the solve() function, finds a numerical
  * solution of the non-linear system assembling and solving a linear system,
- * using as maxinum number of iterations and as tolerance the same used for
+ * using as maximum number of iterations and as tolerance the same used for
  * the GMRES solver.
  */
 void
@@ -341,7 +341,7 @@ FisherKolmogorov::solve_newton()
   // There are no dirichlet boundary conditions
 
 
-  // iterative cycle till convergence
+  // Iterative cycle till convergence
   while (n_iter < n_max_iters && residual_norm > residual_tolerance)
     {
       // assembly of the jacobian matrix and the residual vector
@@ -424,7 +424,7 @@ FisherKolmogorov::solve()
  * contains information about splitting data across multiple MPI processes.
  * The output files are saved in the build directory.
  *
- * @param time_step   represents a distinct instant within the time interval T
+ * @param time_step   represents a distinct instant within the time interval [0,T].
  */
 void
 FisherKolmogorov::output(const unsigned int &time_step) const
