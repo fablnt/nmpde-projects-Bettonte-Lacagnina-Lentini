@@ -5,6 +5,7 @@
 #include <string>
 
 using namespace dealii;
+
 /**
  * Base class for initial seeding regions in the brain.
  *
@@ -49,7 +50,8 @@ public:
 };
 
 /**
- * Specialization of the Tau_inclusions class for 3D problems.
+ * Specialization of the Tau_inclusions class for the 3D domain
+ * "brain-h3.0.msh".
  */
 template <>
 class Tau_inclusions<3> : public SeedingRegion<3>
@@ -67,7 +69,7 @@ public:
 };
 
 /**
- * Specialization of the Tau_inclusions class for 2D problems.
+ * Specialization of the Tau_inclusions class for the 2D domain "ellipse.msh".
  */
 template <>
 class Tau_inclusions<2> : public SeedingRegion<2>
@@ -101,7 +103,8 @@ public:
 };
 
 /**
- * Specialization of the Amyloid_Beta_deposits class for 3D problems.
+ * Specialization of the Amyloid_Beta_deposits class for the 3D domain
+ * "brain-h3.0.msh".
  */
 template <>
 class Amyloid_Beta_deposits<3> : public SeedingRegion<3>
@@ -120,7 +123,8 @@ public:
 };
 
 /**
- * Specialization of the Amyloid_Beta_deposits class for 2D problems.
+ * Specialization of the Amyloid_Beta_deposits class for the 2D domain
+ * "ellipse.msh".
  */
 template <>
 class Amyloid_Beta_deposits<2> : public SeedingRegion<2>
@@ -157,7 +161,8 @@ public:
 };
 
 /**
- * Specialization of the TPD43_inclusions class for 3D problems.
+ * Specialization of the TPD43_inclusions class for the 3D domain
+ * "brain-h3.0.msh".
  */
 template <>
 class TPD43_inclusions<3> : public SeedingRegion<3>
@@ -175,7 +180,7 @@ public:
 };
 
 /**
- * Specialization of the TPD43_inclusions class for 2D problems.
+ * Specialization of the TPD43_inclusions class for the 2D domain "ellipse.msh".
  */
 template <>
 class TPD43_inclusions<2> : public SeedingRegion<2>
@@ -239,7 +244,8 @@ public:
 };
 
 /**
- * Specialization of the Grey_matter class for 3D problems.
+ * Specialization of the Grey_matter class for the 3D domain
+ * "brain-h3.0.msh".
  */
 template <>
 class Grey_matter<3>
@@ -257,7 +263,7 @@ public:
 };
 
 /**
- * Specialization of the Grey_matter class for 2D problems.
+ * Specialization of the Grey_matter class for the 2D domain "ellipse.msh".
  */
 template <>
 class Grey_matter<2>
@@ -478,8 +484,8 @@ protected:
 
 /**
  * Class to define the direction of the fibers in the brain following those of
- * the axons. Based on the locations of the points, the direction is either
- * radial or circumferential.
+ * the axons. Based on the locations of the points, the direction of the axon is
+ * either radial or circumferential.
  *
  * @tparam dim Dimension of the problem.
  */
