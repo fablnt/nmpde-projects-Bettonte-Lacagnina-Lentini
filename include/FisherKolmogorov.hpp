@@ -45,8 +45,7 @@
 using namespace dealii;
 
 /**
- * This class is used to define the Fisher-Kolmogorov equation and solve it
- * numerically.
+ * Class representing the Fisher-Kolmogorov equation.
  */
 class FisherKolmogorov
 {
@@ -54,7 +53,7 @@ public:
   static constexpr unsigned int dim = 3;
 
   /**
-   * This class is used to define the isotropic diffusion coefficient dext for
+   * Function for the isotropic diffusion coefficient dext for
    * white matter.
    */
   class IsotropicDiffusionCoefficientWhite : public Function<dim>
@@ -72,7 +71,7 @@ public:
   };
 
   /**
-   * This class is used to define the isotropic diffusion coefficient dext for
+   * Function for the isotropic diffusion coefficient dext for
    * grey matter.
    */
   class IsotropicDiffusionCoefficientGrey : public Function<dim>
@@ -90,7 +89,7 @@ public:
   };
 
   /**
-   * This class is used to define the anisotropic diffusion coefficient daxn for
+   * Function for the anisotropic diffusion coefficient daxn for
    * white matter.
    */
   class AnisotropicDiffusionCoefficientWhite : public Function<dim>
@@ -108,7 +107,7 @@ public:
   };
 
   /**
-   * This class is used to define the anisotropic diffusion coefficient daxn for
+   * Function for the anisotropic diffusion coefficient daxn for
    * grey matter.
    */
   class AnisotropicDiffusionCoefficientGrey : public Function<dim>
@@ -126,7 +125,7 @@ public:
   };
 
   /**
-   * This class is used to define the growth coefficient alpha for white matter.
+   * Function for the growth coefficient alpha for white matter.
    */
   class GrowthCoefficientWhite : public Function<dim>
   {
@@ -143,7 +142,7 @@ public:
   };
 
   /**
-   * This class is used to define the growth coefficient alpha for grey matter.
+   * Function for the growth coefficient alpha for grey matter.
    */
   class GrowthCoefficientGrey : public Function<dim>
   {
@@ -160,8 +159,8 @@ public:
   };
 
   /**
-   * This class is used to define the initial concentration of the misfolded
-   * protein c(t = 0).
+   * Function for the initial concentration of the misfolded
+   * protein c(t = 0), depending on the seeding region of the problem.
    */
   class FunctionC0 : public Function<dim>
   {
@@ -223,45 +222,61 @@ protected:
   void
   output(const unsigned int &time_step) const;
 
+  // Number of MPI processes.
   const unsigned int mpi_size;
 
+  // Rank of the current MPI process.
   const unsigned int mpi_rank;
 
   // Parallel output stream.
   ConditionalOStream pcout;
 
+  // Coefficient dext for white matter.
   IsotropicDiffusionCoefficientWhite isotropic_coefficient_white;
 
+  // Coefficient dext for grey matter.
   IsotropicDiffusionCoefficientGrey isotropic_coefficient_grey;
 
+  // Coefficient daxn for white matter.
   AnisotropicDiffusionCoefficientGrey anisotropic_coefficient_grey;
 
+  // Coefficient daxn for grey matter.
   AnisotropicDiffusionCoefficientWhite anisotropic_coefficient_white;
 
+  // Coefficient alpha for white matter.
   GrowthCoefficientWhite growth_coefficient_white;
 
+  // Coefficient alpha for grey matter.
   GrowthCoefficientGrey growth_coefficient_grey;
 
+  // Initial concentration c(t = 0).
   FunctionC0 c_0;
 
   // Fiber orientation
   std::string orientation;
 
+  // Time t.
   double time;
 
+  // Final time.
   const double T;
 
+  // Mesh file name.
   const std::string mesh_file_name;
 
+  // Polynomial degree.
   const unsigned int r;
 
+  // Time step.
   const double deltat;
 
+  // Center of the domain.
   Point<dim> global_center;
 
+  // Grey matter region.
   Grey_matter<dim> grey_matter;
 
-  // direction function of the fiber orientation.
+  // Direction function of the fiber orientation.
   std::unique_ptr<Function<dim>> direction;
 
   // Triangulation. The parallel::fullydistributed::Triangulation class manages
