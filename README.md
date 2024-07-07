@@ -20,7 +20,7 @@ with domain $\Omega \subset \mathbb{R}^d$, spatial coordinates $\textbf{x} \in \
 To model the two different spreading mechanisms of misfolded proteins across the brain, the tensor $\textbf{D}$ is defined as: $\textbf{D} = d^{ext} \textbf{I} + d^{axn} \textbf{n} \otimes \textbf{n} $
 where the extracellular diffusion $d^{ext}$ is associated with the isotropic diffusion of misfolded protein through the extracellular space, while the axonal transport $d^{axn}$ is associate with anisotropic diffusion of misfolded protein along the local axonal direction $\textbf{n}$.
 
-There are two versions of the solver: a 1D version, used for convergence studies, and a general solver that accounts for different dimensions of the problem and offers more realistic physical modeling. We recommend working with the latter.
+There are two versions of the solver: a 1D serial version, used for convergence studies, and a general solver that accounts for different dimensions of the problem and offers more realistic physical modeling and computing performances. We recommend working with the latter.
 
 
 ## Build with CMake
