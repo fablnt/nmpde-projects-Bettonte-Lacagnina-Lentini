@@ -255,7 +255,7 @@ protected:
   // Fiber orientation
   std::string orientation;
 
-  // Time t.
+  // current Time.
   double time;
 
   // Final time.
