@@ -74,7 +74,7 @@ The parameters for the solver are set directly in the code. To modify them you n
 
 The available values for the seeding region variable are : "Tau inclusions", "TPD-43 inclusions", "Amyloid-Beta deposits". The available values for the fiber orientation are: "radial", "circumferential", "axon-based".
 
-- To set the dimension of the problem you need to modify the following variable ([(Line 54)](include/FisherKolmogorov.hpp#L54)) in the `FisherKolmogorov.hpp` file:
+- To set the dimension of the problem you need to modify the following variable ([Line 54](include/FisherKolmogorov.hpp#L54)) in the `FisherKolmogorov.hpp` file:
 ```cpp
 static constexpr unsigned int dim = 3;
 ```
