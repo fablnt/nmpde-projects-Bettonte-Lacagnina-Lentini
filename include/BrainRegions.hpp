@@ -144,13 +144,13 @@ public:
 };
 
 /**
- * Derived class for TPD-43 inclusions in the brain.
+ * Derived class for TDP-43 inclusions in the brain.
  */
 template <int dim>
-class TPD43_inclusions : public SeedingRegion<dim>
+class TDP43_inclusions : public SeedingRegion<dim>
 {
 public:
-  TPD43_inclusions()
+  TDP43_inclusions()
   {}
 
   virtual bool
@@ -161,14 +161,14 @@ public:
 };
 
 /**
- * Specialization of the TPD43_inclusions class for the 3D domain
+ * Specialization of the TDP43_inclusions class for the 3D domain
  * "brain-h3.0.msh".
  */
 template <>
-class TPD43_inclusions<3> : public SeedingRegion<3>
+class TDP43_inclusions<3> : public SeedingRegion<3>
 {
 public:
-  TPD43_inclusions()
+  TDP43_inclusions()
   {}
 
   virtual bool
@@ -180,13 +180,13 @@ public:
 };
 
 /**
- * Specialization of the TPD43_inclusions class for the 2D domain "ellipse.msh".
+ * Specialization of the TDP43_inclusions class for the 2D domain "ellipse.msh".
  */
 template <>
-class TPD43_inclusions<2> : public SeedingRegion<2>
+class TDP43_inclusions<2> : public SeedingRegion<2>
 {
 public:
-  TPD43_inclusions()
+  TDP43_inclusions()
   {}
 
   virtual bool
@@ -212,8 +212,8 @@ getSeedingRegion(std::string region)
     return std::make_unique<Tau_inclusions<dim>>();
   else if (region == "Amyloid-Beta deposits")
     return std::make_unique<Amyloid_Beta_deposits<dim>>();
-  else if (region == "TPD-43 inclusions")
-    return std::make_unique<TPD43_inclusions<dim>>();
+  else if (region == "TDP-43 inclusions")
+    return std::make_unique<TDP43_inclusions<dim>>();
   else
     throw std::invalid_argument("Invalid seeding region");
 }
